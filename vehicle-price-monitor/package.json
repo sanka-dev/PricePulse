@@ -1,0 +1,32 @@
+{
+  "name": "vehicle-price-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vehicle Price Monitor - Full-stack monorepo for tracking vehicle listings and prices",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @vehicle-price-monitor/web",
+    "dev:mobile": "npm run dev -w @vehicle-price-monitor/mobile",
+    "dev:api": "npm run dev -w @vehicle-price-monitor/api",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:types": "npm run build -w @vehicle-price-monitor/types",
+    "build:web": "npm run build -w @vehicle-price-monitor/web",
+    "build:api": "npm run build -w @vehicle-price-monitor/api",
+    "build": "npm run build:types && npm run build:web && npm run build:api",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules",
+    "clean:dist": "rimraf apps/*/dist apps/*/.next packages/*/dist"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.10",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
