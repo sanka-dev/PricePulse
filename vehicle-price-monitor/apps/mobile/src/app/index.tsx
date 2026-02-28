@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.logo}>🚗</Text>
-        <Text style={styles.title}>Vehicle Price Monitor</Text>
+        <Text style={styles.title}>PricePulse</Text>
         <Text style={styles.subtitle}>
           Track vehicle prices and never miss a deal
         </Text>

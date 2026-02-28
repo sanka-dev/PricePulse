@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button, Input, Label } from '@/components/ui';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -54,11 +54,9 @@ export default function RegisterPage() {
       }
 
       if (data.user && !data.session) {
-        // Email confirmation required
         router.push('/login?message=Check your email to confirm your account');
       } else if (data.session) {
-        // Auto signed in
-        router.push('/vehicles');
+        router.push('/dashboard');
         router.refresh();
       }
     } catch (err) {
@@ -69,101 +67,113 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="text-center">
-          <span className="text-4xl">🚗</span>
-          <CardTitle className="mt-4 text-2xl">Create your account</CardTitle>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
-            <Link
-              href="/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+        <p className="text-muted-foreground mt-2">
+          Start tracking vehicle prices today
+        </p>
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First name</Label>
             <Input
-              label="First name"
+              id="firstName"
               value={formData.firstName}
-              onChange={(e) =>
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, firstName: e.target.value })
               }
               required
               placeholder="John"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last name</Label>
             <Input
-              label="Last name"
+              id="lastName"
               value={formData.lastName}
-              onChange={(e) =>
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, lastName: e.target.value })
               }
               required
               placeholder="Doe"
             />
           </div>
+        </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
           <Input
-            label="Email address"
+            id="email"
             type="email"
             value={formData.email}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, email: e.target.value })
             }
             required
             placeholder="you@example.com"
           />
+        </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
           <Input
-            label="Password"
+            id="password"
             type="password"
             value={formData.password}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, password: e.target.value })
             }
             required
             placeholder="••••••••"
-            helperText="At least 8 characters"
           />
+          <p className="text-xs text-muted-foreground">At least 8 characters</p>
+        </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm password</Label>
           <Input
-            label="Confirm password"
+            id="confirmPassword"
             type="password"
             value={formData.confirmPassword}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, confirmPassword: e.target.value })
             }
             required
             placeholder="••••••••"
           />
+        </div>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Create account
-          </Button>
+        <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+          Create account
+        </Button>
 
-          <p className="text-xs text-center text-gray-500">
-            By creating an account, you agree to our{' '}
-            <Link href="/terms" className="text-primary-600 hover:text-primary-500">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="text-primary-600 hover:text-primary-500">
-              Privacy Policy
-            </Link>
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+        <p className="text-xs text-center text-muted-foreground">
+          By creating an account, you agree to our{' '}
+          <Link href="/terms" className="text-foreground/60 hover:text-foreground">
+            Terms
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="text-foreground/60 hover:text-foreground">
+            Privacy Policy
+          </Link>
+        </p>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link href="/login" className="text-foreground font-medium hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

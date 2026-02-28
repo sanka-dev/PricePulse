@@ -5,8 +5,9 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Vehicle Price Monitor',
+  title: 'PricePulse',
   description: 'Track vehicle prices and get alerts on price drops',
+  applicationName: 'PricePulse',
 };
 
 export default function RootLayout({

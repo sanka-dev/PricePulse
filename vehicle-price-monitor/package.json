@@ -2,7 +2,7 @@
   "name": "vehicle-price-monitor",
   "version": "1.0.0",
   "private": true,
-  "description": "Vehicle Price Monitor - Full-stack monorepo for tracking vehicle listings and prices",
+  "description": "PricePulse - Full-stack monorepo for tracking vehicle listings and prices",
   "workspaces": [
     "apps/*",
     "packages/*"

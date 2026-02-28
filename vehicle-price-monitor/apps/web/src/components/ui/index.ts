@@ -1,3 +1,5 @@
-export { Button } from './Button';
-export { Input } from './Input';
-export { Card, CardHeader, CardTitle, CardContent, CardFooter } from './Card';
+export { Button, buttonVariants, type ButtonProps } from './button'
+export { Input } from './input'
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './card'
+export { Label } from './label'
+export { Separator } from './separator'

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button, Input, Label } from '@/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        router.push('/vehicles');
+        router.push('/dashboard');
         router.refresh();
       }
     } catch (err) {
@@ -44,75 +44,76 @@ export default function LoginPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="text-center">
-          <span className="text-4xl">🚗</span>
-          <CardTitle className="mt-4 text-2xl">Sign in to your account</CardTitle>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Or{' '}
-            <Link
-              href="/register"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              create a new account
-            </Link>
-          </p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <p className="text-muted-foreground mt-2">
+          Sign in to continue to PricePulse
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+        
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
           <Input
-            label="Email address"
+            id="email"
             type="email"
             value={formData.email}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, email: e.target.value })
             }
             required
             placeholder="you@example.com"
           />
+        </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
           <Input
-            label="Password"
+            id="password"
             type="password"
             value={formData.password}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, password: e.target.value })
             }
             required
             placeholder="••••••••"
           />
+        </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-primary-600 rounded border-gray-300"
-              />
-              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                Remember me
-              </span>
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary-600 hover:text-primary-500"
-            >
-              Forgot password?
-            </Link>
-          </div>
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-4 h-4 rounded border-input bg-background focus:ring-ring"
+            />
+            <span className="text-muted-foreground">Remember me</span>
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Sign in
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+          Sign in
+        </Button>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Don't have an account?{' '}
+        <Link href="/register" className="text-foreground font-medium hover:underline">
+          Create one
+        </Link>
+      </p>
+    </div>
   );
 }

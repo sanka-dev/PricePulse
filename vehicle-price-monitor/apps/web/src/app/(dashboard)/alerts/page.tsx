@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import type { AlertResponseDto } from '@vehicle-price-monitor/types';
-import { AlertType, AlertStatus } from '@vehicle-price-monitor/types';
+import { AlertStatus } from '@vehicle-price-monitor/types';
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<AlertResponseDto[]>([]);
@@ -14,48 +14,33 @@ export default function AlertsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Alerts</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Get notified when prices change
           </p>
         </div>
-        <Link href="/alerts/new">
-          <Button>+ Create Alert</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/alerts/new">+ Create Alert</Link>
+        </Button>
       </div>
 
       {/* Alert stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Active Alerts</p>
-                <p className="text-2xl font-bold mt-1">0</p>
-              </div>
-              <span className="text-3xl">🔔</span>
-            </div>
+            <p className="text-sm text-muted-foreground">Active Alerts</p>
+            <p className="text-2xl font-bold mt-1">0</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Triggered Today</p>
-                <p className="text-2xl font-bold mt-1">0</p>
-              </div>
-              <span className="text-3xl">✅</span>
-            </div>
+            <p className="text-sm text-muted-foreground">Triggered Today</p>
+            <p className="text-2xl font-bold mt-1">0</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Notifications</p>
-                <p className="text-2xl font-bold mt-1">0</p>
-              </div>
-              <span className="text-3xl">📬</span>
-            </div>
+            <p className="text-sm text-muted-foreground">Total Notifications</p>
+            <p className="text-2xl font-bold mt-1">0</p>
           </CardContent>
         </Card>
       </div>
@@ -68,17 +53,16 @@ export default function AlertsPage() {
         <CardContent>
           {alerts.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔔</div>
               <h3 className="text-lg font-medium mb-2">No alerts yet</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Create an alert to get notified when prices drop
               </p>
-              <Link href="/alerts/new">
-                <Button>Create Your First Alert</Button>
-              </Link>
+              <Button asChild>
+                <Link href="/alerts/new">Create Your First Alert</Link>
+              </Button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            <div className="divide-y divide-border">
               {alerts.map((alert) => (
                 <AlertRow key={alert.id} alert={alert} />
               ))}
@@ -92,24 +76,18 @@ export default function AlertsPage() {
 
 function AlertRow({ alert }: { alert: AlertResponseDto }) {
   const statusColors = {
-    [AlertStatus.ACTIVE]: 'bg-green-100 text-green-700',
-    [AlertStatus.PAUSED]: 'bg-yellow-100 text-yellow-700',
-    [AlertStatus.TRIGGERED]: 'bg-blue-100 text-blue-700',
-    [AlertStatus.EXPIRED]: 'bg-gray-100 text-gray-700',
+    [AlertStatus.ACTIVE]: 'bg-green-500/10 text-green-500',
+    [AlertStatus.PAUSED]: 'bg-yellow-500/10 text-yellow-500',
+    [AlertStatus.TRIGGERED]: 'bg-blue-500/10 text-blue-500',
+    [AlertStatus.EXPIRED]: 'bg-muted text-muted-foreground',
   };
 
   return (
     <div className="py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-          {alert.type === AlertType.PRICE_DROP && '📉'}
-          {alert.type === AlertType.PRICE_THRESHOLD && '🎯'}
-          {alert.type === AlertType.NEW_LISTING && '🆕'}
-          {alert.type === AlertType.PRICE_CHANGE && '📊'}
-        </div>
         <div>
           <h4 className="font-medium">{alert.name}</h4>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             {alert.type.replace(/_/g, ' ')}
             {alert.targetPrice && ` • Target: $${alert.targetPrice.toLocaleString()}`}
           </p>
@@ -121,11 +99,9 @@ function AlertRow({ alert }: { alert: AlertResponseDto }) {
         >
           {alert.status}
         </span>
-        <Link href={`/alerts/${alert.id}`}>
-          <Button variant="ghost" size="sm">
-            View
-          </Button>
-        </Link>
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/alerts/${alert.id}`}>View</Link>
+        </Button>
       </div>
     </div>
   );
