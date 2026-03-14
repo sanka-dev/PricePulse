@@ -89,7 +89,7 @@ function AlertRow({ alert }: { alert: AlertResponseDto }) {
           <h4 className="font-medium">{alert.name}</h4>
           <p className="text-sm text-muted-foreground">
             {alert.type.replace(/_/g, ' ')}
-            {alert.targetPrice && ` • Target: $${alert.targetPrice.toLocaleString()}`}
+            {alert.targetPrice && ` • Target: LKR ${alert.targetPrice.toLocaleString()}`}
           </p>
         </div>
       </div>

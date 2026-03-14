@@ -61,7 +61,7 @@ export default function AlertsScreen() {
           <Text style={styles.alertType}>
             {item.type.replace(/_/g, ' ')}
             {item.targetPrice &&
-              ` • Target: $${item.targetPrice.toLocaleString()}`}
+              ` • Target: LKR ${item.targetPrice.toLocaleString()}`}
           </Text>
         </View>
         <View
@@ -82,7 +82,7 @@ export default function AlertsScreen() {
       <Text style={styles.emptySubtitle}>
         Create an alert to get notified when prices drop
       </Text>
-      <Pressable style={styles.addButton} onPress={() => {}}>
+      <Pressable style={styles.addButton} onPress={() => { }}>
         <Text style={styles.addButtonText}>Create Alert</Text>
       </Pressable>
     </View>

@@ -94,13 +94,12 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
         </p>
         <div className="flex items-center justify-between mt-3">
           <span className="text-lg font-bold">
-            ${item.currentPrice.toLocaleString()}
+            LKR {item.currentPrice.toLocaleString()}
           </span>
           {priceChange !== null && (
             <span
-              className={`text-sm ${
-                priceChange < 0 ? 'text-green-500' : 'text-red-500'
-              }`}
+              className={`text-sm ${priceChange < 0 ? 'text-green-500' : 'text-red-500'
+                }`}
             >
               {priceChange > 0 ? '+' : ''}
               {priceChange.toFixed(1)}%
