@@ -26,8 +26,20 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
   const listings = parseIkmanListings(html);
   logger.info({ totalParsed: listings.length }, "Parsed Ikman listings");
 
-  const preview = listings.slice(0, 3);
-  logger.info({ firstThreeListings: preview }, "First 3 parsed listings");
+  const preview = listings.slice(0, 3).map((listing) => ({
+    source: listing.source,
+    sourceListingId: listing.sourceListingId,
+    title: listing.title,
+    price: listing.price,
+    url: listing.url,
+    location: listing.location,
+    mileage: listing.mileage,
+    year: listing.year,
+    imageUrls: listing.imageUrls.slice(0, 3),
+  }));
+
+  console.log(preview);
+  logger.info({ previewCount: preview.length }, "Printed first 3 parsed listings");
 
   return {
     totalFound: listings.length,
