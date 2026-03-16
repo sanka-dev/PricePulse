@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["scraper"]
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  INACTIVE
+  UNKNOWN
+
+  @@schema("scraper")
+}
+
+enum ScrapeRunStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+
+  @@schema("scraper")
+}
+
+model Listing {
+  id              String        @id @default(cuid())
+  source          String
+  sourceListingId String
+  url             String        @unique
+  title           String
+  brand           String?
+  model           String?
+  year            Int?
+  price           Decimal?      @db.Decimal(12, 2)
+  mileage         Int?
+  fuelType        String?
+  transmission    String?
+  location        String?
+  description     String?
+  imageUrls       String[]      @default([])
+  status          ListingStatus @default(ACTIVE)
+  rawData         Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  priceHistory PriceHistory[]
+
+  @@unique([source, sourceListingId])
+  @@index([source])
+  @@index([status])
+  @@index([updatedAt])
+  @@schema("scraper")
+}
+
+model PriceHistory {
+  id         String   @id @default(cuid())
+  listingId  String
+  oldPrice   Decimal? @db.Decimal(12, 2)
+  newPrice   Decimal  @db.Decimal(12, 2)
+  detectedAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, detectedAt])
+  @@schema("scraper")
+}
+
+model ScrapeRun {
+  id           String          @id @default(cuid())
+  source       String
+  startedAt    DateTime        @default(now())
+  finishedAt   DateTime?
+  status       ScrapeRunStatus @default(RUNNING)
+  totalFound   Int             @default(0)
+  totalNew     Int             @default(0)
+  totalUpdated Int             @default(0)
+  totalFailed  Int             @default(0)
+  log          Json?
+
+  @@index([source, startedAt])
+  @@index([status, startedAt])
+  @@schema("scraper")
+}
