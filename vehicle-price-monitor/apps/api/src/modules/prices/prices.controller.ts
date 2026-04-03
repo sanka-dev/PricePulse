@@ -8,12 +8,12 @@ interface AuthenticatedUser {
   email: string;
 }
 
-@Controller('prices')
+@Controller()
 @UseGuards(AuthGuard('supabase'))
 export class PricesController {
   constructor(private readonly pricesService: PricesService) {}
 
-  @Get('vehicle/:vehicleId')
+  @Get('prices/vehicle/:vehicleId')
   getHistory(
     @Param('vehicleId') vehicleId: string,
     @Query('startDate') startDate?: string,
@@ -28,8 +28,13 @@ export class PricesController {
     );
   }
 
-  @Get('stats')
+  @Get('prices/stats')
   getStats(@CurrentUser() user: AuthenticatedUser) {
     return this.pricesService.getStats(user.id);
+  }
+
+  @Get('listings/:id/history')
+  getListingHistory(@Param('id') listingId: string) {
+    return this.pricesService.getListingHistory(listingId);
   }
 }

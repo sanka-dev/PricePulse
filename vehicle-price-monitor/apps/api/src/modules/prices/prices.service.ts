@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import {
@@ -20,10 +21,36 @@ export interface PriceRecord {
 
 @Injectable()
 export class PricesService {
+  private readonly prisma = new PrismaClient();
+
   constructor(
     private readonly supabase: SupabaseService,
     private readonly vehiclesService: VehiclesService,
   ) {}
+
+  async getListingHistory(listingId: string): Promise<
+    Array<{
+      oldPrice: number | null;
+      newPrice: number;
+      detectedAt: Date;
+    }>
+  > {
+    const rows = await this.prisma.priceHistory.findMany({
+      where: { listingId },
+      orderBy: { detectedAt: 'asc' },
+      select: {
+        oldPrice: true,
+        newPrice: true,
+        detectedAt: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      oldPrice: row.oldPrice === null ? null : Number(row.oldPrice),
+      newPrice: Number(row.newPrice),
+      detectedAt: row.detectedAt,
+    }));
+  }
 
   async recordPrice(
     vehicleId: string,
