@@ -7,13 +7,14 @@ import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { PricesModule } from './modules/prices/prices.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { ListingsModule } from './modules/listings/listings.module';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', '../scraper/.env'],
     }),
 
     // Supabase
@@ -25,6 +26,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
     VehiclesModule,
     PricesModule,
     AlertsModule,
+    ListingsModule,
   ],
 })
 export class AppModule {}

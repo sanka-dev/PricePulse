@@ -32,9 +32,4 @@ export class PricesController {
   getStats(@CurrentUser() user: AuthenticatedUser) {
     return this.pricesService.getStats(user.id);
   }
-
-  @Get('listings/:id/history')
-  getListingHistory(@Param('id') listingId: string) {
-    return this.pricesService.getListingHistory(listingId);
-  }
 }

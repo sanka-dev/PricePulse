@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Listings', href: '/listings' },
   { name: 'Watchlist', href: '/watchlist' },
   { name: 'Analytics', href: '/analytics' },
   { name: 'Alerts', href: '/alerts' },

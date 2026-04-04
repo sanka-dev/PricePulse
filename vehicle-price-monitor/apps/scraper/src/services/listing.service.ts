@@ -40,7 +40,7 @@ function toListingWriteData(listing: NormalizedListing) {
     rawData = listing.rawData as Prisma.InputJsonValue;
   }
 
-  return {
+ return {
     source: listing.source,
     sourceListingId: listing.sourceListingId,
     url: listing.url,
