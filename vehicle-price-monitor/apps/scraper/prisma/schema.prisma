@@ -57,6 +57,22 @@ model Listing {
   @@schema("scraper")
 }
 
+model Alert {
+  id         String   @id @default(cuid())
+
+  keyword    String?
+  minYear    Int?
+  maxPrice   Float?
+  maxMileage Int?
+  location   String?
+
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([isActive])
+  @@schema("scraper")
+}
+
 model PriceHistory {
   id         String   @id @default(cuid())
   listingId  String

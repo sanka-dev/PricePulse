@@ -6,6 +6,9 @@ export interface GetListingsQuery {
   limit?: string;
   minPrice?: string;
   maxPrice?: string;
+  minYear?: string;
+  maxMileage?: string;
+  keyword?: string;
   location?: string;
 }
 
@@ -37,13 +40,27 @@ export class ListingsService {
     const limit = this.parsePositiveInt(query.limit, 20, 'limit');
     const minPrice = this.parseDecimal(query.minPrice, 'minPrice');
     const maxPrice = this.parseDecimal(query.maxPrice, 'maxPrice');
+    const minYear = this.parseOptionalPositiveInt(query.minYear, 'minYear');
+    const maxMileage = this.parseOptionalPositiveInt(query.maxMileage, 'maxMileage');
+    const keyword = query.keyword?.trim();
     const location = query.location?.trim();
 
     if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
       throw new BadRequestException('minPrice cannot be greater than maxPrice');
     }
 
+    if (minYear !== undefined && (minYear < 1900 || minYear > 2100)) {
+      throw new BadRequestException('minYear must be between 1900 and 2100');
+    }
+
     const where: Prisma.ListingWhereInput = {};
+
+    if (keyword) {
+      where.title = {
+        contains: keyword,
+        mode: 'insensitive',
+      };
+    }
 
     if (location) {
       where.location = {
@@ -54,12 +71,16 @@ export class ListingsService {
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {};
-      if (minPrice !== undefined) {
-        where.price.gte = minPrice;
-      }
-      if (maxPrice !== undefined) {
-        where.price.lte = maxPrice;
-      }
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
+    }
+
+    if (minYear !== undefined) {
+      where.year = { gte: minYear };
+    }
+
+    if (maxMileage !== undefined) {
+      where.mileage = { lte: maxMileage };
     }
 
     const [rows, total] = await Promise.all([
@@ -127,6 +148,19 @@ export class ListingsService {
   private parsePositiveInt(value: string | undefined, defaultValue: number, fieldName: string): number {
     if (value === undefined) {
       return defaultValue;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new BadRequestException(`${fieldName} must be a positive integer`);
+    }
+
+    return parsed;
+  }
+
+  private parseOptionalPositiveInt(value: string | undefined, fieldName: string): number | undefined {
+    if (value === undefined || value === '') {
+      return undefined;
     }
 
     const parsed = Number(value);

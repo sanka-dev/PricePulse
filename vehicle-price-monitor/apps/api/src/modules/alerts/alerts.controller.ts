@@ -1,62 +1,33 @@
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { AlertsService } from './alerts.service';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import {
-  CreateAlertDto,
-  UpdateAlertDto,
-  AlertQueryDto,
-} from '@vehicle-price-monitor/types';
-
-interface AuthenticatedUser {
-  id: string;
-  email: string;
-}
+  AlertsService,
+  AlertResponse,
+  CreateAlertInput,
+  NlpParseInput,
+  NlpParseResult,
+} from './alerts.service';
 
 @Controller('alerts')
-@UseGuards(AuthGuard('supabase'))
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Post()
-  create(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() createAlertDto: CreateAlertDto,
-  ) {
-    return this.alertsService.create(user.id, createAlertDto);
+  create(@Body() body: CreateAlertInput): Promise<AlertResponse> {
+    return this.alertsService.create(body);
+  }
+
+  @Post('nlp')
+  parseNlp(@Body() body: NlpParseInput): Promise<NlpParseResult> {
+    return this.alertsService.parseNlp(body);
   }
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser, @Query() query: AlertQueryDto) {
-    return this.alertsService.findAll(user.id, query);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.alertsService.findById(id, user.id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() updateAlertDto: UpdateAlertDto,
-  ) {
-    return this.alertsService.update(id, user.id, updateAlertDto);
+  findAll(): Promise<AlertResponse[]> {
+    return this.alertsService.findAll();
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.alertsService.remove(id, user.id);
+  deactivate(@Param('id') id: string): Promise<AlertResponse> {
+    return this.alertsService.deactivate(id);
   }
 }

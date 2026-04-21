@@ -1,5 +1,6 @@
-"use client";
+'use client';
 
+import { useEffect, useState } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,46 +10,59 @@ import {
   CartesianGrid,
   Tooltip,
   type TooltipProps,
-} from "recharts";
+} from 'recharts';
+import { Loader2, AlertCircle } from 'lucide-react';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface PriceHistoryEntry {
+  id: string;
+  listingId: string;
   oldPrice: number | null;
   newPrice: number;
-  detectedAt: string | Date;
+  detectedAt: string;
 }
 
 interface PriceHistoryChartProps {
-  data: PriceHistoryEntry[];
+  listingId: string;
   className?: string;
 }
 
-function formatLKR(value: number): string {
-  return `LKR ${value.toLocaleString("en-LK", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+interface ApiResponse {
+  success: boolean;
+  data: PriceHistoryEntry[];
 }
 
-function formatDate(value: string | Date): string {
-  return new Date(value).toLocaleDateString("en-LK", {
-    month: "short",
-    day: "numeric",
+function formatLKR(value: number): string {
+  return new Intl.NumberFormat('en-LK', {
+    style: 'currency',
+    currency: 'LKR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString('en-LK', {
+    month: 'short',
+    day: 'numeric',
   });
 }
 
-function formatDateLong(value: string | Date): string {
-  return new Date(value).toLocaleDateString("en-LK", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+function formatDateLong(value: string): string {
+  return new Date(value).toLocaleDateString('en-LK', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
-  if (!active || !payload?.length) {
-    return null;
-  }
+  if (!active || !payload?.length) return null;
 
-  const entry = payload[0].payload as PriceHistoryEntry;
+  const entry = payload[0].payload as PriceHistoryEntry & { date: string };
 
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
@@ -67,11 +81,50 @@ function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
   );
 }
 
-export function PriceHistoryChart({ data, className }: PriceHistoryChartProps) {
+export function PriceHistoryChart({ listingId, className = '' }: PriceHistoryChartProps) {
+  const [data, setData] = useState<PriceHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/listings/${listingId}/history`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json: ApiResponse = await res.json();
+        setData(json.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load price history');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [listingId]);
+
+  if (loading) {
+    return (
+      <div className={`flex h-64 items-center justify-center rounded-xl border border-border bg-card ${className}`}>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card ${className}`}>
+        <AlertCircle className="h-6 w-6 text-destructive" />
+        <p className="text-sm text-destructive">{error}</p>
+      </div>
+    );
+  }
+
   if (data.length === 0) {
     return (
-      <div className={`flex h-64 items-center justify-center rounded-xl border border-border bg-card ${className ?? ""}`}>
-        <p className="text-sm text-muted-foreground">No price history yet.</p>
+      <div className={`flex h-64 items-center justify-center rounded-xl border border-border bg-card ${className}`}>
+        <p className="text-sm text-muted-foreground">No price history yet</p>
       </div>
     );
   }
@@ -87,7 +140,7 @@ export function PriceHistoryChart({ data, className }: PriceHistoryChartProps) {
   const padding = Math.max((maxPrice - minPrice) * 0.1, 1000);
 
   return (
-    <div className={`rounded-xl border border-border bg-card p-4 ${className ?? ""}`}>
+    <div className={`rounded-xl border border-border bg-card p-4 ${className}`}>
       <h3 className="mb-4 text-sm font-medium text-muted-foreground">
         Price History
       </h3>
@@ -110,9 +163,9 @@ export function PriceHistoryChart({ data, className }: PriceHistoryChartProps) {
           <Line
             type="monotone"
             dataKey="newPrice"
-            stroke="hsl(var(--primary, 221 83% 53%))"
+            stroke="hsl(var(--primary))"
             strokeWidth={2}
-            dot={{ r: 4, fill: "hsl(var(--primary, 221 83% 53%))" }}
+            dot={{ r: 4, fill: 'hsl(var(--primary))' }}
             activeDot={{ r: 6 }}
           />
         </LineChart>

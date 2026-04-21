@@ -21,6 +21,20 @@ export type NormalizedListing = {
 
 export type UpsertListingResult = { type: "created" | "updated" | "unchanged"; listing: unknown };
 
+type NewListingForAlert = {
+  title: string;
+  year: number | null;
+  price: Prisma.Decimal | null;
+  mileage: number | null;
+};
+
+type SearchAlert = {
+  keyword: string | null;
+  minYear: number | null;
+  maxPrice: number | null;
+  maxMileage: number | null;
+};
+
 function normalizePrice(value: unknown): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -40,7 +54,7 @@ function toListingWriteData(listing: NormalizedListing) {
     rawData = listing.rawData as Prisma.InputJsonValue;
   }
 
- return {
+  return {
     source: listing.source,
     sourceListingId: listing.sourceListingId,
     url: listing.url,
@@ -58,6 +72,97 @@ function toListingWriteData(listing: NormalizedListing) {
     rawData,
     status: "ACTIVE" as const,
   };
+}
+
+function listingMatchesAlert(
+  listing: NewListingForAlert,
+  price: number | null,
+  alert: SearchAlert,
+): boolean {
+  if (alert.keyword) {
+    if (!listing.title.toLowerCase().includes(alert.keyword.toLowerCase())) {
+      return false;
+    }
+  }
+
+  if (alert.minYear !== null) {
+    if (listing.year === null || listing.year < alert.minYear) {
+      return false;
+    }
+  }
+
+  if (alert.maxPrice !== null) {
+    if (price === null || price > alert.maxPrice) {
+      return false;
+    }
+  }
+
+  if (alert.maxMileage !== null) {
+    if (listing.mileage === null || listing.mileage > alert.maxMileage) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function checkSearchAlertsForNewListing(listing: NewListingForAlert): Promise<void> {
+  const alerts = await prisma.alert.findMany({
+    where: { isActive: true },
+    select: {
+      keyword: true,
+      minYear: true,
+      maxPrice: true,
+      maxMileage: true,
+    },
+  });
+
+  if (alerts.length === 0) {
+    return;
+  }
+
+  const price = normalizePrice(listing.price);
+
+  for (const alert of alerts) {
+    if (listingMatchesAlert(listing, price, alert)) {
+      console.log(
+        `ALERT MATCH: keyword=${alert.keyword ?? ""}, title=${listing.title}, price=${price ?? ""}`,
+      );
+    }
+  }
+}
+
+async function checkPriceDropAlerts(
+  listing: NewListingForAlert,
+  oldPrice: number,
+  newPrice: number,
+): Promise<void> {
+  // Guard: only price drops should trigger this flow.
+  if (newPrice >= oldPrice) {
+    return;
+  }
+
+  const alerts = await prisma.alert.findMany({
+    where: { isActive: true },
+    select: {
+      keyword: true,
+      minYear: true,
+      maxPrice: true,
+      maxMileage: true,
+    },
+  });
+
+  if (alerts.length === 0) {
+    return;
+  }
+
+  for (const alert of alerts) {
+    if (listingMatchesAlert(listing, newPrice, alert)) {
+      console.log(
+        `PRICE DROP ALERT: title=${listing.title}, old=${oldPrice}, new=${newPrice}`,
+      );
+    }
+  }
 }
 
 export async function upsertListing(listing: NormalizedListing): Promise<UpsertListingResult> {
@@ -86,24 +191,16 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
       });
     }
 
+    await checkSearchAlertsForNewListing(created);
+
     return { type: "created", listing: created };
   }
-
-  console.log("DEBUG PRICE CHECK:", {
-    existingPrice: existing.price,
-    incomingPrice: listing.price,
-  });
 
   const oldPrice = normalizePrice(existing.price);
   const newPrice = normalizePrice(listing.price);
 
-  console.log("NORMALIZED:", {
-    oldPrice,
-    newPrice,
-  });
-
-  const priceChanged = oldPrice !== null && newPrice !== null && Number(oldPrice) !== Number(newPrice);
-  console.log("PRICE CHANGED:", priceChanged);
+  const priceChanged =
+    oldPrice !== null && newPrice !== null && Number(oldPrice) !== Number(newPrice);
 
   const updated = await prisma.listing.update({
     where: { id: existing.id },
@@ -118,6 +215,12 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
         newPrice,
       },
     });
+
+    // Price changes that go DOWN notify matching keyword-based alerts.
+    // Increases intentionally do nothing — see checkPriceDropAlerts guard.
+    if (oldPrice !== null && newPrice !== null && newPrice < oldPrice) {
+      await checkPriceDropAlerts(updated, oldPrice, newPrice);
+    }
   }
 
   return {

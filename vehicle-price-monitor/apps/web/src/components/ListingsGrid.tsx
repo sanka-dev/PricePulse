@@ -1,9 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { MapPin, Loader2, AlertCircle, Car } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui';
+
+const FILTER_KEYS = [
+  'keyword',
+  'location',
+  'minPrice',
+  'maxPrice',
+  'minYear',
+  'maxMileage',
+] as const;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,20 +58,38 @@ function formatLKR(value: number): string {
 }
 
 export default function ListingsGrid() {
+  const searchParams = useSearchParams();
   const [listings, setListings] = useState<Listing[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Serialize only the filter params we care about, in a stable order.
+  const filterQuery = useMemo(() => {
+    if (!searchParams) return '';
+    const out = new URLSearchParams();
+    for (const key of FILTER_KEYS) {
+      const value = searchParams.get(key);
+      if (value) out.set(key, value);
+    }
+    return out.toString();
+  }, [searchParams]);
+
+  // Reset to page 1 whenever active filters change.
+  useEffect(() => {
+    setPage(1);
+  }, [filterQuery]);
+
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `${API_BASE}/api/v1/listings?page=${page}&limit=20`,
-        );
+        const qs = new URLSearchParams(filterQuery);
+        qs.set('page', String(page));
+        qs.set('limit', '20');
+        const res = await fetch(`${API_BASE}/api/v1/listings?${qs.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json: ListingsResponse = await res.json();
         setListings(json.data.data);
@@ -72,7 +101,7 @@ export default function ListingsGrid() {
       }
     };
     fetchListings();
-  }, [page]);
+  }, [page, filterQuery]);
 
   if (loading) {
     return (
@@ -144,48 +173,53 @@ function ListingCard({ listing }: { listing: Listing }) {
   const imageUrl = listing.imageUrls?.[0];
 
   return (
-    <Card className="overflow-hidden group hover:shadow-md transition-shadow">
-      <div className="relative aspect-[4/3] bg-muted">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={listing.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-            <Car className="h-10 w-10" />
-          </div>
-        )}
-      </div>
-
-      <CardContent className="p-4 space-y-2">
-        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
-          {listing.title}
-        </h3>
-
-        {listing.price !== null && (
-          <p className="text-lg font-bold text-primary">
-            {formatLKR(listing.price)}
-          </p>
-        )}
-
-        {listing.location && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate">{listing.location}</span>
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {listing.year && <Badge>{listing.year}</Badge>}
-          {listing.fuelType && <Badge>{listing.fuelType}</Badge>}
-          {listing.transmission && <Badge>{listing.transmission}</Badge>}
+    <Link
+      href={`/listings/${listing.id}`}
+      className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Card className="overflow-hidden group hover:shadow-md transition-shadow cursor-pointer">
+        <div className="relative aspect-[4/3] bg-muted">
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={listing.title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+              <Car className="h-10 w-10" />
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+
+        <CardContent className="p-4 space-y-2">
+          <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+            {listing.title}
+          </h3>
+
+          {listing.price !== null && (
+            <p className="text-lg font-bold text-primary">
+              {formatLKR(listing.price)}
+            </p>
+          )}
+
+          {listing.location && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{listing.location}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {listing.year && <Badge>{listing.year}</Badge>}
+            {listing.fuelType && <Badge>{listing.fuelType}</Badge>}
+            {listing.transmission && <Badge>{listing.transmission}</Badge>}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
