@@ -19,7 +19,7 @@ export interface ParsedAlertFilters {
 @Injectable()
 export class GeminiNlpService implements OnModuleInit {
   private readonly logger = new Logger(GeminiNlpService.name);
-  private readonly MODEL_NAME = 'gemini-2.0-flash';
+  private readonly MODEL_NAME = 'gemini-2.5-flash';
   private client: GoogleGenerativeAI | null = null;
 
   constructor(private readonly configService: ConfigService) {}
