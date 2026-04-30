@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Watchlist', href: '/watchlist' },
   { name: 'Analytics', href: '/analytics' },
   { name: 'Alerts', href: '/alerts' },
+  { name: 'Live Alerts', href: '/live-alerts' },
   { name: 'Notifications', href: '/notifications' },
 ];
 

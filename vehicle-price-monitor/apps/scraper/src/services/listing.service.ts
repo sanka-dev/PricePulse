@@ -166,7 +166,7 @@ async function checkPriceDropAlerts(
 }
 
 export async function upsertListing(listing: NormalizedListing): Promise<UpsertListingResult> {
-  const existing = await prisma.listing.findUnique({
+  const existingBySourceId = await prisma.listing.findUnique({
     where: {
       source_sourceListingId: {
         source: listing.source,
@@ -175,7 +175,13 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
     },
   });
 
-  if (!existing) {
+  const existingByUrl =
+    existingBySourceId ??
+    (await prisma.listing.findUnique({
+      where: { url: listing.url },
+    }));
+
+  if (!existingByUrl) {
     const created = await prisma.listing.create({
       data: toListingWriteData(listing),
     });
@@ -196,23 +202,24 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
     return { type: "created", listing: created };
   }
 
-  const oldPrice = normalizePrice(existing.price);
+  const oldPrice = normalizePrice(existingByUrl.price);
   const newPrice = normalizePrice(listing.price);
 
+  const becamePriced = oldPrice === null && newPrice !== null;
   const priceChanged =
     oldPrice !== null && newPrice !== null && Number(oldPrice) !== Number(newPrice);
 
   const updated = await prisma.listing.update({
-    where: { id: existing.id },
+    where: { id: existingByUrl.id },
     data: toListingWriteData(listing),
   });
 
-  if (priceChanged) {
+  if (becamePriced || priceChanged) {
     await prisma.priceHistory.create({
       data: {
-        listingId: existing.id,
-        oldPrice,
-        newPrice,
+        listingId: existingByUrl.id,
+        oldPrice: oldPrice ?? null,
+        newPrice: newPrice as number,
       },
     });
 

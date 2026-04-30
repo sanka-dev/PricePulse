@@ -1,13 +1,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { Prisma } from "@prisma/client";
 import { z, type ZodTypeAny } from "zod";
-import { prisma } from "../../db/prisma";
 import { logger } from "../../core/logger";
-import { fetchIkmanHtml } from "./ikman.fetcher";
-import { parseIkmanListings } from "./ikman.parser";
+import { prisma } from "../../db/prisma";
+import { fetchRiyasewanaHtml } from "./riyasewana.fetcher";
+import { parseRiyasewanaListings } from "./riyasewana.parser";
 
-export type IkmanScrapeResult = {
+export type RiyasewanaScrapeResult = {
   totalFound: number;
   totalCreated: number;
   totalUpdated: number;
@@ -33,7 +34,6 @@ const fallbackNormalizedListingSchema = z.object({
 });
 
 type NormalizedListing = z.infer<typeof fallbackNormalizedListingSchema>;
-
 type UpsertListingResult = { type: "created" | "updated" };
 type UpsertListingFn = (listing: NormalizedListing) => Promise<UpsertListingResult>;
 type StartScrapeRunFn = (input: { source: string }) => Promise<{ id: string }>;
@@ -54,13 +54,23 @@ function buildSafeRawData(input: {
   price?: number;
   location?: string;
   url: string;
+  year?: number;
+  mileage?: number;
 }) {
   return {
     extractedTitle: input.title,
     extractedPrice: input.price ?? null,
     extractedLocation: input.location ?? null,
+    extractedYear: input.year ?? null,
+    extractedMileage: input.mileage ?? null,
     sourceUrl: input.url,
   };
+}
+
+function toJsonField(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return Prisma.JsonNull;
+  return value as Prisma.InputJsonValue;
 }
 
 function isRetryablePrismaConnectionError(error: unknown): boolean {
@@ -83,7 +93,10 @@ async function withRetry<T>(operationName: string, fn: () => Promise<T>, attempt
       if (!isRetryablePrismaConnectionError(error) || attempt === attempts) {
         throw error;
       }
-      logger.warn({ operationName, attempt }, "Retrying DB operation after transient connection error");
+      logger.warn(
+        { operationName, attempt },
+        "Retrying Riyasewana DB operation after transient connection error",
+      );
       await prisma.$disconnect().catch(() => undefined);
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
@@ -108,27 +121,29 @@ function getNormalizedListingSchema(): ZodTypeAny {
 }
 
 function parseMaxPages(input: string | undefined, fallback = 5): number {
-  if (!input) {
-    return fallback;
-  }
-
+  if (!input) return fallback;
   const parsed = Number.parseInt(input, 10);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return fallback;
-  }
-
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
   return parsed;
 }
 
-function buildIkmanSearchUrlForQuery(query: string): string {
-  const template = process.env.IKMAN_SEARCH_URL_TEMPLATE;
-  const encodedQuery = encodeURIComponent(query);
+function toSearchPathSegment(query: string): string {
+  return query
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildRiyasewanaSearchUrlForQuery(query: string): string {
+  const template = process.env.RIYASEWANA_SEARCH_URL_TEMPLATE;
+  const pathSegment = toSearchPathSegment(query);
 
   if (template && template.includes("{query}")) {
-    return template.replaceAll("{query}", encodedQuery);
+    return template.replaceAll("{query}", encodeURIComponent(pathSegment));
   }
 
-  return `https://ikman.lk/en/ads/sri-lanka/vehicles?sort=relevance&buy_now=0&urgent=0&query=${encodedQuery}`;
+  return `https://riyasewana.com/search/${encodeURIComponent(pathSegment)}`;
 }
 
 async function loadActiveAlertQueries(): Promise<string[]> {
@@ -161,18 +176,8 @@ async function loadActiveAlertQueries(): Promise<string[]> {
   return queries;
 }
 
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 50);
-}
-
-function buildIkmanPageUrl(baseUrl: string, page: number): string {
-  if (page <= 1) {
-    return baseUrl;
-  }
+function buildRiyasewanaPageUrl(baseUrl: string, page: number): string {
+  if (page <= 1) return baseUrl;
 
   try {
     const parsed = new URL(baseUrl);
@@ -184,8 +189,8 @@ function buildIkmanPageUrl(baseUrl: string, page: number): string {
   }
 }
 
-function buildIkmanPageUrls(baseUrl: string, maxPages: number): string[] {
-  return Array.from({ length: maxPages }, (_, index) => buildIkmanPageUrl(baseUrl, index + 1));
+function buildRiyasewanaPageUrls(baseUrl: string, maxPages: number): string[] {
+  return Array.from({ length: maxPages }, (_, index) => buildRiyasewanaPageUrl(baseUrl, index + 1));
 }
 
 const fallbackUpsertListing: UpsertListingFn = async (listing) => {
@@ -224,7 +229,7 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         location: listing.location ?? null,
         description: listing.description ?? null,
         imageUrls: listing.imageUrls ?? [],
-        rawData: listing.rawData ?? null,
+        rawData: toJsonField(listing.rawData),
         status: "ACTIVE",
       },
       update: {
@@ -240,7 +245,7 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         location: listing.location ?? null,
         description: listing.description ?? null,
         imageUrls: listing.imageUrls ?? [],
-        rawData: listing.rawData ?? null,
+        rawData: toJsonField(listing.rawData),
         status: "ACTIVE",
       },
     }),
@@ -252,12 +257,14 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         data: {
           listingId: saved.id,
           oldPrice: null,
-          newPrice: listing.price,
+          newPrice: listing.price as number,
         },
       }),
     ).catch((error) => {
-      // Price history is useful but non-critical; keep listing saved.
-      logger.warn({ err: error, sourceListingId: listing.sourceListingId }, "Failed to save initial price history");
+      logger.warn(
+        { err: error, sourceListingId: listing.sourceListingId },
+        "Failed to save Riyasewana initial price history",
+      );
     });
   } else if (
     existing &&
@@ -270,12 +277,14 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         data: {
           listingId: saved.id,
           oldPrice: existing.price,
-          newPrice: listing.price,
+          newPrice: listing.price as number,
         },
       }),
     ).catch((error) => {
-      // Price history is useful but non-critical; keep listing saved.
-      logger.warn({ err: error, sourceListingId: listing.sourceListingId }, "Failed to save changed price history");
+      logger.warn(
+        { err: error, sourceListingId: listing.sourceListingId },
+        "Failed to save Riyasewana changed price history",
+      );
     });
   }
 
@@ -305,29 +314,28 @@ const fallbackFinishScrapeRun: FinishScrapeRunFn = async (runId, input) => {
         totalNew: input.totalNew,
         totalUpdated: input.totalUpdated,
         totalFailed: input.totalFailed,
-        log: input.log,
+        log: toJsonField(input.log),
       },
     }),
   );
 };
 
-export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
-  const url = process.env.IKMAN_URL ?? "https://ikman.lk/en/ads/sri-lanka/vehicles";
+export async function runRiyasewanaScraper(): Promise<RiyasewanaScrapeResult> {
+  const url = process.env.RIYASEWANA_URL ?? "https://riyasewana.com/search/car";
+  const maxPages = parseMaxPages(process.env.RIYASEWANA_MAX_PAGES, 5);
   const queries = await loadActiveAlertQueries();
-  const maxPages = parseMaxPages(process.env.IKMAN_MAX_PAGES, 5);
   const queryJobs = queries.map((query) => ({
     query,
-    baseUrl: buildIkmanSearchUrlForQuery(query),
+    baseUrl: buildRiyasewanaSearchUrlForQuery(query),
   }));
-
   const pageJobs = queryJobs.flatMap((job) =>
-    buildIkmanPageUrls(job.baseUrl, maxPages).map((pageUrl, pageIndex) => ({
+    buildRiyasewanaPageUrls(job.baseUrl, maxPages).map((pageUrl, pageIndex) => ({
       query: job.query,
       pageUrl,
       pageNumber: pageIndex + 1,
     })),
   );
-  const source = "ikman";
+  const source = "riyasewana";
   const normalizedListingSchema = getNormalizedListingSchema();
 
   const listingService = loadOptionalModule<{ upsertListing?: UpsertListingFn }>(
@@ -347,47 +355,46 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
     const scrapeRun = await startScrapeRun({ source });
     scrapeRunId = scrapeRun.id;
   } catch (error) {
-    logger.warn({ err: error, source }, "Failed to create scrape run; continuing without tracking");
+    logger.warn({ err: error, source }, "Failed to create Riyasewana scrape run; continuing");
   }
+
   let totalCreated = 0;
   let totalUpdated = 0;
   let totalFailed = 0;
-  const processingErrors: Array<{ index: number; reason: string; sourceListingId?: string }> = [];
   let totalFound = 0;
+  const processingErrors: Array<{ index: number; reason: string; sourceListingId?: string }> = [];
 
   const debugDir = join(process.cwd(), "debug");
-  const debugFile = join(debugDir, "ikman.html");
+  const debugFile = join(debugDir, "riyasewana.html");
   const debugFiles: string[] = [];
   await mkdir(debugDir, { recursive: true });
-  const listings: ReturnType<typeof parseIkmanListings> = [];
+  const listings: ReturnType<typeof parseRiyasewanaListings> = [];
   const seenListingKeys = new Set<string>();
   let totalParsedAcrossPages = 0;
 
   logger.info(
-      { source, url, activeAlertQueries: queries, maxPages, totalPages: pageJobs.length, scrapeRunId },
-      "Fetching Ikman listings pages from active alert keywords",
+    { source, url, activeAlertQueries: queries, maxPages, totalPages: pageJobs.length, scrapeRunId },
+    "Fetching Riyasewana listings pages from active alert keywords",
   );
 
   if (pageJobs.length === 0) {
-    logger.info({ source }, "No active alert keywords found; skipping Ikman query scrape");
+    logger.info({ source }, "No active alert keywords found; skipping Riyasewana query scrape");
   }
+
   for (const pageJob of pageJobs) {
     const { pageNumber, pageUrl, query } = pageJob;
-    logger.info({ source, pageNumber, pageUrl, query }, "Fetching Ikman listings page");
+    logger.info({ source, pageNumber, pageUrl, query }, "Fetching Riyasewana listings page");
 
-    const html = await fetchIkmanHtml(pageUrl);
-    const querySuffix = query ? `-${toSlug(query)}` : "";
+    const html = await fetchRiyasewanaHtml(pageUrl);
+    const querySuffix = query ? `-${toSearchPathSegment(query)}` : "";
     const pageDebugFile =
       pageNumber === 1
-        ? query
-          ? join(debugDir, `ikman${querySuffix}.html`)
-          : debugFile
-        : join(debugDir, `ikman${querySuffix}-page-${pageNumber}.html`);
+        ? join(debugDir, `riyasewana${querySuffix}.html`)
+        : join(debugDir, `riyasewana${querySuffix}-page-${pageNumber}.html`);
     await writeFile(pageDebugFile, html, "utf8");
     debugFiles.push(pageDebugFile);
-    logger.info({ pageNumber, pageDebugFile }, "Saved raw HTML for page debugging");
 
-    const pageListings = parseIkmanListings(html);
+    const pageListings = parseRiyasewanaListings(html);
     totalParsedAcrossPages += pageListings.length;
 
     let pageUniqueCount = 0;
@@ -413,7 +420,7 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
         pageDuplicatesSkipped: pageDuplicateCount,
         totalMerged: listings.length,
       },
-      "Parsed Ikman page",
+      "Parsed Riyasewana page",
     );
   }
 
@@ -425,23 +432,8 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
       totalDuplicatesSkipped: totalParsedAcrossPages - totalFound,
       totalPages: pageJobs.length,
     },
-    "Parsed Ikman listings across pages",
+    "Parsed Riyasewana listings across pages",
   );
-
-  const preview = listings.slice(0, 3).map((listing) => ({
-    source: listing.source,
-    sourceListingId: listing.sourceListingId,
-    title: listing.title,
-    price: listing.price,
-    url: listing.url,
-    location: listing.location,
-    mileage: listing.mileage,
-    year: listing.year,
-    imageUrls: listing.imageUrls.slice(0, 3),
-  }));
-
-  console.log(preview);
-  logger.info({ previewCount: preview.length }, "Printed first 3 parsed listings");
 
   for (const [index, parsedListing] of listings.entries()) {
     const candidate: NormalizedListing = {
@@ -458,6 +450,8 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
         title: parsedListing.title,
         price: parsedListing.price,
         location: parsedListing.location,
+        year: parsedListing.year,
+        mileage: parsedListing.mileage,
         url: parsedListing.url,
       }),
     };
@@ -472,7 +466,7 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
       });
       logger.warn(
         { index, sourceListingId: parsedListing.sourceListingId },
-        "Skipping listing due to validation failure",
+        "Skipping Riyasewana listing due to validation failure",
       );
       continue;
     }
@@ -494,20 +488,7 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
       });
       logger.warn(
         { err: error, index, sourceListingId: parsedListing.sourceListingId },
-        "Failed to upsert listing; continuing",
-      );
-    }
-
-    if ((index + 1) % 10 === 0 || index + 1 === listings.length) {
-      logger.info(
-        {
-          processed: index + 1,
-          total: listings.length,
-          totalCreated,
-          totalUpdated,
-          totalFailed,
-        },
-        "Listing processing progress",
+        "Failed to upsert Riyasewana listing; continuing",
       );
     }
   }
@@ -540,7 +521,7 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
         log: scrapeLog,
       });
     } catch (error) {
-      logger.warn({ err: error, scrapeRunId }, "Failed to finish scrape run tracking");
+      logger.warn({ err: error, scrapeRunId }, "Failed to finish Riyasewana scrape run tracking");
     }
   }
 

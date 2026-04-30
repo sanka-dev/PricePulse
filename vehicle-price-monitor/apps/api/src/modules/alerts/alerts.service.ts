@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Alert as PrismaAlert, PrismaClient } from '@prisma/client';
+import { Alert as PrismaAlert, Listing as PrismaListing, Prisma, PrismaClient } from '@prisma/client';
 import { GeminiNlpService } from './gemini-nlp.service';
 
 export interface CreateAlertInput {
@@ -21,7 +21,26 @@ export interface AlertResponse {
   createdAt: Date;
 }
 
+export interface AlertMatchListingResponse extends Omit<PrismaListing, 'price'> {
+  price: number | null;
+}
+
+export interface AlertLiveUpdateResponse {
+  alert: AlertResponse;
+  totalMatches: number;
+  latestMatchAt: Date | null;
+  matches: AlertMatchListingResponse[];
+}
+
+export interface AlertLiveUpdatesQuery {
+  limit?: string;
+}
+
 export interface NlpParseInput {
+  text?: unknown;
+}
+
+export interface CreateAlertFromDescriptionInput {
   text?: unknown;
 }
 
@@ -61,6 +80,7 @@ export class AlertsService {
         maxPrice: maxPrice ?? null,
         maxMileage: maxMileage ?? null,
         location: location ?? null,
+        isActive: true,
       },
     });
 
@@ -75,19 +95,57 @@ export class AlertsService {
     return alerts.map((a) => this.toResponse(a));
   }
 
+  async getLiveUpdates(query: AlertLiveUpdatesQuery = {}): Promise<AlertLiveUpdateResponse[]> {
+    const limit = this.parsePositiveIntWithDefault(query.limit, 8, 'limit');
+    const alerts = await this.prisma.alert.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const updates = await Promise.all(
+      alerts.map(async (alert) => {
+        const where = this.buildAlertListingWhere(alert);
+        const [matches, totalMatches] = await Promise.all([
+          this.prisma.listing.findMany({
+            where,
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            take: limit,
+          }),
+          this.prisma.listing.count({ where }),
+        ]);
+
+        return {
+          alert: this.toResponse(alert),
+          totalMatches,
+          latestMatchAt: matches[0]?.updatedAt ?? null,
+          matches: matches.map((listing) => this.toMatchListingResponse(listing)),
+        };
+      }),
+    );
+
+    return updates.sort((a, b) => {
+      const left = a.latestMatchAt?.getTime() ?? 0;
+      const right = b.latestMatchAt?.getTime() ?? 0;
+      return right - left;
+    });
+  }
+
   async parseNlp(input: NlpParseInput): Promise<NlpParseResult> {
-    if (typeof input?.text !== 'string' || input.text.trim().length === 0) {
-      throw new BadRequestException('text must be a non-empty string');
-    }
+    const text = this.parseDescriptionText(input.text);
 
     try {
-      return await this.geminiNlp.parseAlert(input.text);
+      return await this.geminiNlp.parseAlert(text);
     } catch (err) {
       this.logger.warn(
         `Gemini NLP failed, falling back to regex parser: ${(err as Error)?.message ?? err}`,
       );
-      return this.parseNlpWithRegex(input.text);
+      return this.parseNlpWithRegex(text);
     }
+  }
+
+  async createFromDescription(input: CreateAlertFromDescriptionInput): Promise<AlertResponse> {
+    const parsed = await this.parseNlp({ text: input.text });
+    return this.create(parsed);
   }
 
   private parseNlpWithRegex(text: string): NlpParseResult {
@@ -96,11 +154,11 @@ export class AlertsService {
     const mileage = this.extractMaxMileage(working);
     working = mileage.remaining;
 
-    const price = this.extractMaxPrice(working);
-    working = price.remaining;
-
     const year = this.extractMinYear(working);
     working = year.remaining;
+
+    const price = this.extractMaxPrice(working);
+    working = price.remaining;
 
     return {
       keyword: this.extractKeyword(working),
@@ -131,6 +189,62 @@ export class AlertsService {
     if (!trimmed || !/^c[a-z0-9]{24}$/i.test(trimmed)) {
       throw new BadRequestException('Invalid alert id');
     }
+  }
+
+  private buildAlertListingWhere(alert: PrismaAlert): Prisma.ListingWhereInput {
+    const where: Prisma.ListingWhereInput = {
+      source: { in: ['ikman', 'riyasewana'] },
+      status: 'ACTIVE',
+    };
+
+    if (alert.keyword) {
+      where.title = {
+        contains: alert.keyword,
+        mode: 'insensitive',
+      };
+    }
+
+    if (alert.location) {
+      where.location = {
+        contains: alert.location,
+        mode: 'insensitive',
+      };
+    }
+
+    if (alert.minYear !== null) {
+      where.year = { gte: alert.minYear };
+    }
+
+    if (alert.maxPrice !== null) {
+      where.price = { lte: alert.maxPrice };
+    }
+
+    if (alert.maxMileage !== null) {
+      where.mileage = { lte: alert.maxMileage };
+    }
+
+    return where;
+  }
+
+  private parsePositiveIntWithDefault(value: string | undefined, fallback: number, field: string): number {
+    if (value === undefined || value === '') {
+      return fallback;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 50) {
+      throw new BadRequestException(`${field} must be a positive integer up to 50`);
+    }
+
+    return parsed;
+  }
+
+  private parseDescriptionText(value: unknown): string {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      throw new BadRequestException('text must be a non-empty string');
+    }
+
+    return value.trim();
   }
 
   private parseOptionalString(value: unknown, field: string): string | undefined {
@@ -185,6 +299,7 @@ export class AlertsService {
   private readonly PRICE_PATTERNS: RegExp[] = [
     /(?:below|under|less\s+than|max(?:imum)?|up\s+to|at\s+most)\s+(?:rs\.?|lkr|\$)\s*(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)?/,
     /(?:below|under|less\s+than|max(?:imum)?|up\s+to|at\s+most)\s+(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)/,
+    /(?:price|budget|cost|worth|value|valued|which\s+is|that\s+is|is|for|around|about)\s+(?:rs\.?|lkr|\$)?\s*(\d{5,}[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)?/,
     /(?:rs\.?|lkr|\$)\s*(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)?/,
     /(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores)/,
   ];
@@ -248,6 +363,8 @@ export class AlertsService {
     'less', 'than', 'max', 'maximum', 'min', 'minimum', 'at', 'most',
     'up', 'to', 'newer', 'older', 'from', 'after', 'since', 'before',
     'between', 'rs', 'lkr', 'is', 'any', 'car', 'cars', 'vehicle', 'vehicles',
+    'which', 'that', 'price', 'budget', 'cost', 'worth', 'value', 'valued',
+    'around', 'about', 'create', 'alert',
   ]);
 
   private extractKeyword(text: string): string | null {
@@ -275,6 +392,13 @@ export class AlertsService {
       location: alert.location,
       isActive: alert.isActive,
       createdAt: alert.createdAt,
+    };
+  }
+
+  private toMatchListingResponse(listing: PrismaListing): AlertMatchListingResponse {
+    return {
+      ...listing,
+      price: listing.price === null ? null : Number(listing.price),
     };
   }
 }

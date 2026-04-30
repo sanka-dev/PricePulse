@@ -38,7 +38,7 @@ export default function NlpAlertForm({ onCreated }: NlpAlertFormProps = {}) {
 
     setSubmitting(true);
     try {
-      const parsed = await parseText(trimmed);
+      const parsed = await createAlertFromDescription(trimmed);
       setResult(parsed);
 
       if (!hasAnyFilter(parsed)) {
@@ -48,7 +48,6 @@ export default function NlpAlertForm({ onCreated }: NlpAlertFormProps = {}) {
         return;
       }
 
-      await createAlert(parsed);
       setSuccess('Alert created successfully');
       setText('');
       onCreated?.();
@@ -129,8 +128,8 @@ export default function NlpAlertForm({ onCreated }: NlpAlertFormProps = {}) {
   );
 }
 
-async function parseText(text: string): Promise<ParsedAlert> {
-  const res = await fetch(`${API_BASE}/api/v1/alerts/nlp`, {
+async function createAlertFromDescription(text: string): Promise<ParsedAlert> {
+  const res = await fetch(`${API_BASE}/api/v1/alerts/from-description`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
@@ -138,7 +137,7 @@ async function parseText(text: string): Promise<ParsedAlert> {
 
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(extractError(json, res.status, 'Failed to parse input'));
+    throw new Error(extractError(json, res.status, 'Failed to create alert'));
   }
 
   const data = json?.data ?? json;
@@ -148,25 +147,6 @@ async function parseText(text: string): Promise<ParsedAlert> {
     maxPrice: data?.maxPrice ?? null,
     maxMileage: data?.maxMileage ?? null,
   };
-}
-
-async function createAlert(parsed: ParsedAlert): Promise<void> {
-  const payload: Record<string, string | number> = {};
-  if (parsed.keyword) payload.keyword = parsed.keyword;
-  if (parsed.minYear !== null) payload.minYear = parsed.minYear;
-  if (parsed.maxPrice !== null) payload.maxPrice = parsed.maxPrice;
-  if (parsed.maxMileage !== null) payload.maxMileage = parsed.maxMileage;
-
-  const res = await fetch(`${API_BASE}/api/v1/alerts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const json = await res.json().catch(() => null);
-    throw new Error(extractError(json, res.status, 'Failed to create alert'));
-  }
 }
 
 function extractError(

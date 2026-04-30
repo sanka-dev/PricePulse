@@ -1,7 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import {
   AlertsService,
+  AlertLiveUpdateResponse,
+  AlertLiveUpdatesQuery,
   AlertResponse,
+  CreateAlertFromDescriptionInput,
   CreateAlertInput,
   NlpParseInput,
   NlpParseResult,
@@ -21,9 +24,19 @@ export class AlertsController {
     return this.alertsService.parseNlp(body);
   }
 
+  @Post('from-description')
+  createFromDescription(@Body() body: CreateAlertFromDescriptionInput): Promise<AlertResponse> {
+    return this.alertsService.createFromDescription(body);
+  }
+
   @Get()
   findAll(): Promise<AlertResponse[]> {
     return this.alertsService.findAll();
+  }
+
+  @Get('live-updates')
+  getLiveUpdates(@Query() query: AlertLiveUpdatesQuery): Promise<AlertLiveUpdateResponse[]> {
+    return this.alertsService.getLiveUpdates(query);
   }
 
   @Delete(':id')

@@ -92,7 +92,7 @@ export class GeminiNlpService implements OnModuleInit {
     return [
       'You extract vehicle search filters from a user request.',
       'Return ONLY a JSON object with exactly these four fields:',
-      '- keyword: lowercase vehicle make/model (e.g. "toyota aqua"), or null if unclear.',
+      '- keyword: lowercase vehicle make/model only (e.g. "toyota aqua" or "prado"). Do not include year, price, mileage, words like "which is", "under", "for", or other filter text. Null if unclear.',
       '- minYear: 4-digit integer year the vehicle must be at least, or null.',
       '- maxPrice: number in LKR. Expand units: million=1000000, lakh=100000, crore=10000000, k=1000. Do not include currency or unit text. Null if not mentioned.',
       '- maxMileage: integer kilometers. Expand "k" as 1000. Null if not mentioned.',

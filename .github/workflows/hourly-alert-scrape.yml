@@ -1,0 +1,64 @@
+name: Hourly Alert Scrape
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: hourly-alert-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    name: Scrape alert queries
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        working-directory: vehicle-price-monitor
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      NODE_ENV: production
+      LOG_LEVEL: info
+      IKMAN_MAX_PAGES: ${{ vars.IKMAN_MAX_PAGES || '1' }}
+      RIYASEWANA_MAX_PAGES: ${{ vars.RIYASEWANA_MAX_PAGES || '1' }}
+      IKMAN_SEARCH_URL_TEMPLATE: "https://ikman.lk/en/ads/sri-lanka/vehicles?sort=relevance&buy_now=0&urgent=0&query={query}"
+      RIYASEWANA_SEARCH_URL_TEMPLATE: "https://riyasewana.com/search/{query}"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vehicle-price-monitor/package-lock.json
+
+      - name: Validate database secret
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL repository secret is required." >&2
+            exit 1
+          fi
+          if [ -z "$DIRECT_URL" ]; then
+            echo "DIRECT_URL=$DATABASE_URL" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema apps/scraper/prisma/schema.prisma
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run alert scraper
+        run: npm run scrape -w @vehicle-price-monitor/scraper

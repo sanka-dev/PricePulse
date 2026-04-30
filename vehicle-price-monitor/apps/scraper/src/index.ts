@@ -3,13 +3,45 @@ import cron from "node-cron";
 import { logger } from "./core/logger";
 import { prisma } from "./db/prisma";
 import { runIkmanScraper } from "./sources/ikman/ikman.scraper";
+import { runRiyasewanaScraper } from "./sources/riyasewana/riyasewana.scraper";
 
 dotenv.config();
 
 async function runScrapeJob(startMessage: string) {
   logger.info(startMessage);
-  const result = await runIkmanScraper();
-  logger.info(result, "Scraper run finished");
+  const sourceRuns = await Promise.allSettled([
+    runIkmanScraper().then((result) => ({ source: "ikman", result })),
+    runRiyasewanaScraper().then((result) => ({ source: "riyasewana", result })),
+  ]);
+
+  const totals = {
+    totalFound: 0,
+    totalCreated: 0,
+    totalUpdated: 0,
+    totalFailed: 0,
+  };
+
+  let failedSources = 0;
+  for (const sourceRun of sourceRuns) {
+    if (sourceRun.status === "fulfilled") {
+      const { source, result } = sourceRun.value;
+      totals.totalFound += result.totalFound;
+      totals.totalCreated += result.totalCreated;
+      totals.totalUpdated += result.totalUpdated;
+      totals.totalFailed += result.totalFailed;
+      logger.info({ source, ...result }, "Marketplace scraper finished");
+      continue;
+    }
+
+    failedSources += 1;
+    logger.error({ err: sourceRun.reason }, "Marketplace scraper failed");
+  }
+
+  logger.info({ failedSources, ...totals }, "Combined scraper run finished");
+
+  if (failedSources === sourceRuns.length) {
+    throw new Error("All marketplace scrapers failed");
+  }
 }
 
 async function runManualMode() {
