@@ -90,7 +90,7 @@ export default function LiveAlertsPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/v1/alerts/live-updates?limit=6`, {
+      const res = await fetch(`${API_BASE}/api/v1/alerts/live-updates?all=true`, {
         cache: 'no-store',
       });
       const json = await res.json().catch(() => null);

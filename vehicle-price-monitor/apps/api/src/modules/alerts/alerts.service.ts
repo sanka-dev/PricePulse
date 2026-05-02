@@ -34,6 +34,7 @@ export interface AlertLiveUpdateResponse {
 
 export interface AlertLiveUpdatesQuery {
   limit?: string;
+  all?: string;
 }
 
 export interface NlpParseInput {
@@ -96,7 +97,8 @@ export class AlertsService {
   }
 
   async getLiveUpdates(query: AlertLiveUpdatesQuery = {}): Promise<AlertLiveUpdateResponse[]> {
-    const limit = this.parsePositiveIntWithDefault(query.limit, 8, 'limit');
+    const showAll = this.parseBooleanFlag(query.all);
+    const limit = showAll ? undefined : this.parsePositiveIntWithDefault(query.limit, 8, 'limit');
     const alerts = await this.prisma.alert.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
@@ -109,7 +111,7 @@ export class AlertsService {
           this.prisma.listing.findMany({
             where,
             orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-            take: limit,
+            ...(limit ? { take: limit } : {}),
           }),
           this.prisma.listing.count({ where }),
         ]);
@@ -237,6 +239,11 @@ export class AlertsService {
     }
 
     return parsed;
+  }
+
+  private parseBooleanFlag(value: string | undefined): boolean {
+    if (!value) return false;
+    return ['1', 'true', 'yes', 'all'].includes(value.toLowerCase());
   }
 
   private parseDescriptionText(value: unknown): string {
