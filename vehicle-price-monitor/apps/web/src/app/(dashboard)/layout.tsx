@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -24,20 +24,48 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          throw error;
+        }
+
+        if (!cancelled && data.user) {
+          setUser(data.user);
+          return;
+        }
+      } catch (error) {
+        // Lock timeout can happen when browser extensions interfere with auth storage locks.
+        // Fall back to session read before redirecting.
+        const message = error instanceof Error ? error.message.toLowerCase() : '';
+        if (!message.includes('lock') && !message.includes('timeout')) {
+          console.warn('Failed to fetch user via getUser, trying session fallback.', error);
+        }
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!cancelled && sessionData.session?.user) {
+        setUser(sessionData.session.user);
         return;
       }
-      setUser(user);
+
+      if (!cancelled) {
+        router.push('/login');
+      }
     };
+
     getUser();
-  }, [router, supabase.auth]);
+    return () => {
+      cancelled = true;
+    };
+  }, [router, supabase]);
 
   const getUserInitial = () => {
     if (user?.user_metadata?.full_name) {

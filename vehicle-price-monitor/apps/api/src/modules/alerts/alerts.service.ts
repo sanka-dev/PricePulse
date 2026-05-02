@@ -37,6 +37,23 @@ export interface AlertLiveUpdatesQuery {
   all?: string;
 }
 
+export interface AlertNotificationsQuery {
+  limit?: string;
+  all?: string;
+}
+
+export interface AlertNotificationResponse {
+  id: string;
+  title: string;
+  message: string;
+  type: 'price_drop' | 'alert' | 'system';
+  createdAt: Date;
+  alertId: string;
+  listingId: string;
+  listingUrl: string;
+  source: string;
+}
+
 export interface NlpParseInput {
   text?: unknown;
 }
@@ -130,6 +147,58 @@ export class AlertsService {
       const right = b.latestMatchAt?.getTime() ?? 0;
       return right - left;
     });
+  }
+
+  async getNotifications(query: AlertNotificationsQuery = {}): Promise<AlertNotificationResponse[]> {
+    try {
+      const limit = this.parseNotificationsLimit(query.limit, 120);
+      const updates = await this.getLiveUpdates({ all: query.all ?? 'true' });
+
+      const items = updates.flatMap((update) =>
+        update.matches.map((match) => ({
+          id: `${update.alert.id}:${match.id}`,
+          title: update.alert.keyword
+            ? `Alert match: ${update.alert.keyword}`
+            : 'Alert match found',
+          message: match.title,
+          type: 'alert' as const,
+          createdAt: match.updatedAt,
+          alertId: update.alert.id,
+          listingId: match.id,
+          listingUrl: match.url,
+          source: match.source,
+        })),
+      );
+
+      const deduped = Array.from(
+        new Map(items.map((item) => [item.id, item])).values(),
+      );
+
+      return deduped
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to build notifications feed: ${(error as Error)?.message ?? String(error)}`,
+      );
+      return [];
+    }
+  }
+
+  private parseNotificationsLimit(value: string | undefined, fallback: number): number {
+    if (value === undefined || value === '') {
+      return fallback;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 500) {
+      throw new BadRequestException('limit must be a positive integer up to 500');
+    }
+
+    return parsed;
   }
 
   async parseNlp(input: NlpParseInput): Promise<NlpParseResult> {

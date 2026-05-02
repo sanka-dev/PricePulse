@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import {
   AlertsService,
+  AlertNotificationResponse,
+  AlertNotificationsQuery,
   AlertLiveUpdateResponse,
   AlertLiveUpdatesQuery,
   AlertResponse,
@@ -37,6 +39,11 @@ export class AlertsController {
   @Get('live-updates')
   getLiveUpdates(@Query() query: AlertLiveUpdatesQuery): Promise<AlertLiveUpdateResponse[]> {
     return this.alertsService.getLiveUpdates(query);
+  }
+
+  @Get('notifications')
+  getNotifications(@Query() query: AlertNotificationsQuery): Promise<AlertNotificationResponse[]> {
+    return this.alertsService.getNotifications(query);
   }
 
   @Delete(':id')
