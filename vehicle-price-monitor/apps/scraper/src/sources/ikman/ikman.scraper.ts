@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { Prisma } from "@prisma/client";
 import { z, type ZodTypeAny } from "zod";
 import { prisma } from "../../db/prisma";
 import { logger } from "../../core/logger";
@@ -61,6 +62,12 @@ function buildSafeRawData(input: {
     extractedLocation: input.location ?? null,
     sourceUrl: input.url,
   };
+}
+
+function toJsonField(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return Prisma.JsonNull;
+  return value as Prisma.InputJsonValue;
 }
 
 function isRetryablePrismaConnectionError(error: unknown): boolean {
@@ -224,7 +231,7 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         location: listing.location ?? null,
         description: listing.description ?? null,
         imageUrls: listing.imageUrls ?? [],
-        rawData: listing.rawData ?? null,
+        rawData: toJsonField(listing.rawData),
         status: "ACTIVE",
       },
       update: {
@@ -240,19 +247,20 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         location: listing.location ?? null,
         description: listing.description ?? null,
         imageUrls: listing.imageUrls ?? [],
-        rawData: listing.rawData ?? null,
+        rawData: toJsonField(listing.rawData),
         status: "ACTIVE",
       },
     }),
   );
 
   if (!existing && listing.price != null) {
+    const price = listing.price;
     await withRetry("priceHistory.create.initial", async () =>
       prisma.priceHistory.create({
         data: {
           listingId: saved.id,
           oldPrice: null,
-          newPrice: listing.price,
+          newPrice: price,
         },
       }),
     ).catch((error) => {
@@ -265,12 +273,13 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
     listing.price != null &&
     Number(existing.price) !== Number(listing.price)
   ) {
+    const price = listing.price;
     await withRetry("priceHistory.create.change", async () =>
       prisma.priceHistory.create({
         data: {
           listingId: saved.id,
           oldPrice: existing.price,
-          newPrice: listing.price,
+          newPrice: price,
         },
       }),
     ).catch((error) => {
@@ -305,7 +314,7 @@ const fallbackFinishScrapeRun: FinishScrapeRunFn = async (runId, input) => {
         totalNew: input.totalNew,
         totalUpdated: input.totalUpdated,
         totalFailed: input.totalFailed,
-        log: input.log,
+        log: toJsonField(input.log),
       },
     }),
   );

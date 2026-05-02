@@ -5,6 +5,7 @@ import {
   ListingResponse,
   PaginatedListingsResult,
   PriceHistoryResponse,
+  MarketplaceSearchResult,
 } from './listings.service';
 
 @Controller('listings')
@@ -14,6 +15,14 @@ export class ListingsController {
   @Get()
   getListings(@Query() query: GetListingsQuery): Promise<PaginatedListingsResult> {
     return this.listingsService.getListings(query);
+  }
+
+  @Get('search/marketplaces')
+  searchAcrossMarketplaces(
+    @Query('query') query: string,
+    @Query('limit') limit?: string,
+  ): Promise<MarketplaceSearchResult> {
+    return this.listingsService.searchAcrossMarketplaces(query, limit);
   }
 
   @Get(':id')

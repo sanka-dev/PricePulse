@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
+import { withPrismaRetry } from "../db/retry";
 
 export type NormalizedListing = {
   source: string;
@@ -107,15 +108,17 @@ function listingMatchesAlert(
 }
 
 async function checkSearchAlertsForNewListing(listing: NewListingForAlert): Promise<void> {
-  const alerts = await prisma.alert.findMany({
-    where: { isActive: true },
-    select: {
-      keyword: true,
-      minYear: true,
-      maxPrice: true,
-      maxMileage: true,
-    },
-  });
+  const alerts = await withPrismaRetry("alert.findMany.searchAlerts", () =>
+    prisma.alert.findMany({
+      where: { isActive: true },
+      select: {
+        keyword: true,
+        minYear: true,
+        maxPrice: true,
+        maxMileage: true,
+      },
+    }),
+  );
 
   if (alerts.length === 0) {
     return;
@@ -142,15 +145,17 @@ async function checkPriceDropAlerts(
     return;
   }
 
-  const alerts = await prisma.alert.findMany({
-    where: { isActive: true },
-    select: {
-      keyword: true,
-      minYear: true,
-      maxPrice: true,
-      maxMileage: true,
-    },
-  });
+  const alerts = await withPrismaRetry("alert.findMany.priceDropAlerts", () =>
+    prisma.alert.findMany({
+      where: { isActive: true },
+      select: {
+        keyword: true,
+        minYear: true,
+        maxPrice: true,
+        maxMileage: true,
+      },
+    }),
+  );
 
   if (alerts.length === 0) {
     return;
@@ -166,35 +171,43 @@ async function checkPriceDropAlerts(
 }
 
 export async function upsertListing(listing: NormalizedListing): Promise<UpsertListingResult> {
-  const existingBySourceId = await prisma.listing.findUnique({
-    where: {
-      source_sourceListingId: {
-        source: listing.source,
-        sourceListingId: listing.sourceListingId,
+  const existingBySourceId = await withPrismaRetry("listing.findUnique.sourceId", () =>
+    prisma.listing.findUnique({
+      where: {
+        source_sourceListingId: {
+          source: listing.source,
+          sourceListingId: listing.sourceListingId,
+        },
       },
-    },
-  });
+    }),
+  );
 
   const existingByUrl =
     existingBySourceId ??
-    (await prisma.listing.findUnique({
-      where: { url: listing.url },
-    }));
+    (await withPrismaRetry("listing.findUnique.url", () =>
+      prisma.listing.findUnique({
+        where: { url: listing.url },
+      }),
+    ));
 
   if (!existingByUrl) {
-    const created = await prisma.listing.create({
-      data: toListingWriteData(listing),
-    });
+    const created = await withPrismaRetry("listing.create", () =>
+      prisma.listing.create({
+        data: toListingWriteData(listing),
+      }),
+    );
 
     const createdPrice = normalizePrice(listing.price);
     if (createdPrice !== null) {
-      await prisma.priceHistory.create({
-        data: {
-          listingId: created.id,
-          oldPrice: null,
-          newPrice: createdPrice,
-        },
-      });
+      await withPrismaRetry("priceHistory.create.initial", () =>
+        prisma.priceHistory.create({
+          data: {
+            listingId: created.id,
+            oldPrice: null,
+            newPrice: createdPrice,
+          },
+        }),
+      );
     }
 
     await checkSearchAlertsForNewListing(created);
@@ -209,19 +222,23 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
   const priceChanged =
     oldPrice !== null && newPrice !== null && Number(oldPrice) !== Number(newPrice);
 
-  const updated = await prisma.listing.update({
-    where: { id: existingByUrl.id },
-    data: toListingWriteData(listing),
-  });
+  const updated = await withPrismaRetry("listing.update", () =>
+    prisma.listing.update({
+      where: { id: existingByUrl.id },
+      data: toListingWriteData(listing),
+    }),
+  );
 
   if (becamePriced || priceChanged) {
-    await prisma.priceHistory.create({
-      data: {
-        listingId: existingByUrl.id,
-        oldPrice: oldPrice ?? null,
-        newPrice: newPrice as number,
-      },
-    });
+    await withPrismaRetry("priceHistory.create.change", () =>
+      prisma.priceHistory.create({
+        data: {
+          listingId: existingByUrl.id,
+          oldPrice: oldPrice ?? null,
+          newPrice: newPrice as number,
+        },
+      }),
+    );
 
     // Price changes that go DOWN notify matching keyword-based alerts.
     // Increases intentionally do nothing — see checkPriceDropAlerts guard.

@@ -69,7 +69,29 @@ model Alert {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
 
+  demandSnapshots AlertDemandSnapshot[]
+
   @@index([isActive])
+  @@schema("scraper")
+}
+
+model AlertDemandSnapshot {
+  id              String   @id @default(cuid())
+  alertId         String
+  snapshotDate    DateTime @db.Date
+  listedCount     Int      @default(0)
+  leftCount       Int      @default(0)
+  soldCount       Int      @default(0)
+  newCount        Int      @default(0)
+  listingIds      String[] @default([])
+  lastScrapedAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([alertId, snapshotDate])
+  @@index([alertId, snapshotDate])
   @@schema("scraper")
 }
 
