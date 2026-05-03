@@ -1,21 +1,61 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { theme } from '@/lib/mobile-theme';
+import { getAccessToken } from '@/lib/session';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    let isMounted = true;
+
+    const bootstrap = async () => {
+      try {
+        if (Platform.OS === 'web') return;
+
+        const token = await getAccessToken();
+        if (!token || !isMounted) return;
+
+        const { notifyForNewAlertEvents, registerForPushNotifications } = await import(
+          '@/lib/notifications'
+        );
+
+        await registerForPushNotifications();
+        await notifyForNewAlertEvents();
+
+        intervalId = setInterval(() => {
+          notifyForNewAlertEvents().catch(() => {
+            // Ignore polling errors to keep app responsive.
+          });
+        }, 60_000);
+      } catch {
+        // Notification setup should not block app startup.
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
+            backgroundColor: theme.colors.background,
           },
-          headerTintColor: colorScheme === 'dark' ? '#ffffff' : '#000000',
+          headerTintColor: theme.colors.text,
           headerTitleStyle: {
             fontWeight: 'bold',
+          },
+          contentStyle: {
+            backgroundColor: theme.colors.background,
           },
         }}
       >

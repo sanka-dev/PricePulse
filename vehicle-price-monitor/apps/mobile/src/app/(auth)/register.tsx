@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { apiClient } from '@/lib/api-client';
+import { theme } from '@/lib/mobile-theme';
+import { saveSession } from '@/lib/session';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -42,14 +45,22 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call
-      // await apiClient.auth.register(formData);
-      
-      Alert.alert('Success', 'Account created! Please sign in.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)/login') },
-      ]);
+      const response = await apiClient.auth.register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      });
+      await saveSession(response.data);
+
+      Alert.alert('Success', 'Account created successfully.');
+      router.replace('/(tabs)/dashboard');
     } catch (error) {
-      Alert.alert('Error', 'Registration failed. Please try again.');
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Registration failed. Please try again.';
+      Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +87,7 @@ export default function RegisterScreen() {
                     setFormData({ ...formData, firstName: text })
                   }
                   placeholder="John"
+                  placeholderTextColor={theme.colors.textMuted}
                   autoComplete="given-name"
                 />
               </View>
@@ -88,6 +100,7 @@ export default function RegisterScreen() {
                     setFormData({ ...formData, lastName: text })
                   }
                   placeholder="Doe"
+                  placeholderTextColor={theme.colors.textMuted}
                   autoComplete="family-name"
                 />
               </View>
@@ -102,6 +115,7 @@ export default function RegisterScreen() {
                   setFormData({ ...formData, email: text })
                 }
                 placeholder="you@example.com"
+                placeholderTextColor={theme.colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -117,6 +131,7 @@ export default function RegisterScreen() {
                   setFormData({ ...formData, password: text })
                 }
                 placeholder="••••••••"
+                placeholderTextColor={theme.colors.textMuted}
                 secureTextEntry
                 autoComplete="new-password"
               />
@@ -131,6 +146,7 @@ export default function RegisterScreen() {
                   setFormData({ ...formData, confirmPassword: text })
                 }
                 placeholder="••••••••"
+                placeholderTextColor={theme.colors.textMuted}
                 secureTextEntry
                 autoComplete="new-password"
               />
@@ -165,7 +181,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -191,19 +207,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.text,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    color: theme.colors.text,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -213,7 +230,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#ffffff',
+    color: theme.colors.primaryText,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -222,11 +239,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     fontSize: 14,
   },
   linkTextBold: {
-    color: '#2563eb',
+    color: theme.colors.text,
     fontWeight: '600',
   },
 });

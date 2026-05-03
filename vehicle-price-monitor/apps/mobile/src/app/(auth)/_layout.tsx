@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { theme } from '@/lib/mobile-theme';
 
 export default function AuthLayout() {
   return (
@@ -6,6 +7,13 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: true,
         headerBackTitle: 'Back',
+        headerStyle: {
+          backgroundColor: theme.colors.background,
+        },
+        headerTintColor: theme.colors.text,
+        contentStyle: {
+          backgroundColor: theme.colors.background,
+        },
       }}
     >
       <Stack.Screen

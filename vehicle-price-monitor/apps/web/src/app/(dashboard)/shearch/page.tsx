@@ -42,7 +42,7 @@ function formatLKR(value: number): string {
   }).format(value);
 }
 
-export default function VehicleShearchPage() {
+export default function VehicleSearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MarketplaceListing[]>([]);
   const [bySource, setBySource] = useState({ ikman: 0, riyasewana: 0 });
@@ -96,7 +96,7 @@ export default function VehicleShearchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Vehicle Shearch</h1>
+        <h1 className="text-2xl font-bold">Vehicle Search</h1>
         <p className="text-muted-foreground">
           Search vehicles live across ikman.lk and riyasewana.com
         </p>

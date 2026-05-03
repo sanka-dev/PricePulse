@@ -11,12 +11,15 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { VehicleResponseDto } from '@vehicle-price-monitor/types';
+import { apiClient } from '@/lib/api-client';
+import { theme } from '@/lib/mobile-theme';
 
 export default function VehiclesScreen() {
   const router = useRouter();
   const [vehicles, setVehicles] = useState<VehicleResponseDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVehicles();
@@ -24,12 +27,13 @@ export default function VehiclesScreen() {
 
   const fetchVehicles = async () => {
     try {
-      // TODO: Implement actual API call
-      // const response = await apiClient.vehicles.list();
-      // setVehicles(response.data);
-      setVehicles([]);
+      setError(null);
+      const response = await apiClient.vehicles.list();
+      setVehicles(response.data);
     } catch (error) {
-      console.error('Failed to fetch vehicles:', error);
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch vehicles';
+      setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -67,7 +71,7 @@ export default function VehiclesScreen() {
           {item.title}
         </Text>
         <Text style={styles.vehicleDetails}>
-          {item.year} • {item.mileage?.toLocaleString()} km
+          {item.year} • {item.mileage ? `${item.mileage.toLocaleString()} km` : 'Mileage N/A'}
         </Text>
         <View style={styles.priceRow}>
           <Text style={styles.vehiclePrice}>
@@ -99,9 +103,16 @@ export default function VehiclesScreen() {
         renderItem={renderVehicle}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          error ? <Text style={styles.errorText}>{error}</Text> : null
+        }
         ListEmptyComponent={!isLoading ? renderEmpty : null}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.text}
+          />
         }
       />
     </SafeAreaView>
@@ -111,7 +122,7 @@ export default function VehiclesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.background,
   },
   listContent: {
     padding: 16,
@@ -119,18 +130,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   vehicleCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    boxShadow: '0px 1px 2px rgba(0,0,0,0.2)',
     elevation: 2,
   },
   imageContainer: {
     height: 160,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.cardMuted,
     position: 'relative',
   },
   image: {
@@ -150,7 +160,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.success,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -166,12 +176,12 @@ const styles = StyleSheet.create({
   vehicleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   vehicleDetails: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     marginBottom: 8,
   },
   priceRow: {
@@ -182,11 +192,11 @@ const styles = StyleSheet.create({
   vehiclePrice: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563eb',
+    color: theme.colors.text,
   },
   vehicleSource: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
   },
   emptyContainer: {
     flex: 1,
@@ -201,23 +211,29 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     marginBottom: 24,
   },
   addButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   addButtonText: {
-    color: '#ffffff',
+    color: theme.colors.primaryText,
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorText: {
+    color: theme.colors.danger,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
   },
 });

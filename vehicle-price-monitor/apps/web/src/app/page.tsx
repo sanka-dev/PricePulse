@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui';
+import GlassSurface from '@/components/ui/GlassSurface';
 
 const Beams = dynamic(() => import('@/components/ui/Beams'), { ssr: false });
 
@@ -10,29 +11,47 @@ export default function HomePage() {
     <main className="min-h-screen bg-background text-foreground">
       {/* Header - Floating Glass Effect */}
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl">
-        <div className="relative bg-gradient-to-b from-white/8 to-white/3 backdrop-blur-3xl border border-white/10 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.1)] before:absolute before:inset-0 before:rounded-[32px] before:bg-gradient-to-br before:from-white/5 before:via-transparent before:to-transparent before:pointer-events-none">
-          <div className="px-6 h-14 flex items-center justify-between relative z-10">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
-                <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <span className="font-semibold text-lg tracking-tight">PricePulse</span>
+        <GlassSurface
+          width="100%"
+          height={56}
+          borderRadius={32}
+          borderWidth={0.08}
+          brightness={55}
+          opacity={0.9}
+          blur={10}
+          displace={8}
+          backgroundOpacity={0.1}
+          saturation={1.5}
+          distortionScale={-160}
+          redOffset={3}
+          greenOffset={12}
+          blueOffset={20}
+          mixBlendMode="screen"
+          className="relative"
+        >
+          <div className="w-full px-6 h-14 flex items-center justify-between relative z-10">
+            <Link href="/" className="flex items-center group">
+              <BrandLogo className="text-2xl" />
             </Link>
-            <nav className="flex items-center gap-8">
-              <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <nav className="ml-auto flex items-center justify-end gap-5">
+              <Link
+                href="#features"
+                className="text-sm whitespace-nowrap text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Features
               </Link>
-              <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/login"
+                className="text-sm whitespace-nowrap text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Sign in
               </Link>
-              <Button asChild size="sm" className="rounded-xl">
+              <Button asChild size="sm" className="rounded-xl whitespace-nowrap">
                 <Link href="/register">Get Started</Link>
               </Button>
             </nav>
           </div>
-        </div>
+        </GlassSurface>
       </header>
 
       {/* Hero Section - Full Screen */}
@@ -148,13 +167,8 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
-              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <span className="font-medium text-sm">PricePulse</span>
+          <div className="flex items-center">
+            <BrandLogo className="text-2xl" />
           </div>
           <p className="text-sm text-muted-foreground">© 2026 PricePulse. All rights reserved.</p>
         </div>

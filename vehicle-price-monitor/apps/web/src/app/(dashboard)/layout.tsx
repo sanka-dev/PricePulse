@@ -3,14 +3,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { BrandLogo } from '@/components/brand-logo';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { ModeToggle } from '@/components/mode-toggle';
 import type { User } from '@supabase/supabase-js';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Shearch', href: '/shearch' },
-  { name: 'Watchlist', href: '/watchlist' },
+  { name: 'Search', href: '/shearch' },
   { name: 'Analytics', href: '/analytics' },
   { name: 'Alerts', href: '/alerts' },
   { name: 'Live Alerts', href: '/live-alerts' },
@@ -82,13 +83,10 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-card border-r border-border">
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2 px-6 border-b border-border">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
-          <span className="font-bold text-lg">PricePulse</span>
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <Link href="/" className="inline-flex items-center">
+            <BrandLogo className="text-3xl" />
+          </Link>
         </div>
 
         {/* Navigation */}
@@ -121,6 +119,7 @@ export default function DashboardLayout({
             {/* Breadcrumb or page title can go here */}
           </div>
           <div className="flex items-center gap-4">
+            <ModeToggle />
             <Link
               href="/profile"
               className={cn(

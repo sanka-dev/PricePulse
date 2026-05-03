@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { apiClient } from '@/lib/api-client';
+import { theme } from '@/lib/mobile-theme';
+import { saveSession } from '@/lib/session';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,14 +30,13 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call
-      // const response = await apiClient.auth.login({ email, password });
-      // await SecureStore.setItemAsync('token', response.data.accessToken);
-      
-      // For now, just navigate to the main app
-      router.replace('/(tabs)/vehicles');
+      const response = await apiClient.auth.login({ email, password });
+      await saveSession(response.data);
+      router.replace('/(tabs)/dashboard');
     } catch (error) {
-      Alert.alert('Error', 'Invalid credentials');
+      const message =
+        error instanceof Error ? error.message : 'Invalid credentials';
+      Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +60,7 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
+                placeholderTextColor={theme.colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -71,6 +74,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
+                placeholderTextColor={theme.colors.textMuted}
                 secureTextEntry
                 autoComplete="password"
               />
@@ -105,7 +109,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -124,19 +128,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.text,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    color: theme.colors.text,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -146,7 +151,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#ffffff',
+    color: theme.colors.primaryText,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -155,11 +160,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     fontSize: 14,
   },
   linkTextBold: {
-    color: '#2563eb',
+    color: theme.colors.text,
     fontWeight: '600',
   },
 });

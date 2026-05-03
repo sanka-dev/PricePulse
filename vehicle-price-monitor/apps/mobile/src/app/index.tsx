@@ -2,9 +2,19 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAccessToken } from '@/lib/session';
+import { theme } from '@/lib/mobile-theme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+
+  useEffect(() => {
+    getAccessToken().then((token) => {
+      if (token) {
+        router.replace('/(tabs)/dashboard');
+      }
+    });
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -40,7 +50,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flex: 1,
@@ -55,13 +65,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginBottom: 48,
   },
@@ -70,30 +80,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.primaryText,
     fontSize: 16,
     fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#1f2937',
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   footer: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
     paddingBottom: 24,
   },
 });

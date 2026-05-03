@@ -1,48 +1,77 @@
 import { Tabs } from 'expo-router';
-import { Text, View, StyleSheet, useColorScheme } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
+import { theme } from '@/lib/mobile-theme';
 
 export default function TabsLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: isDark ? '#9ca3af' : '#6b7280',
+        tabBarActiveTintColor: theme.colors.text,
+        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: {
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          borderTopColor: isDark ? '#374151' : '#e5e7eb',
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
         },
         headerStyle: {
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          backgroundColor: theme.colors.background,
         },
-        headerTintColor: isDark ? '#ffffff' : '#000000',
+        headerTintColor: theme.colors.text,
+        sceneStyle: {
+          backgroundColor: theme.colors.background,
+        },
       }}
     >
       <Tabs.Screen
-        name="vehicles"
+        name="dashboard/index"
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ color }) => <TabIcon icon="🏠" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search/index"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color }) => <TabIcon icon="🔎" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="vehicles/index"
         options={{
           title: 'Vehicles',
           tabBarIcon: ({ color }) => <TabIcon icon="🚗" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="prices"
-        options={{
-          title: 'Prices',
-          tabBarIcon: ({ color }) => <TabIcon icon="📊" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="alerts"
+        name="alerts/index"
         options={{
           title: 'Alerts',
           tabBarIcon: ({ color }) => <TabIcon icon="🔔" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="notifications/index"
+        options={{
+          title: 'Notifs',
+          tabBarIcon: ({ color }) => <TabIcon icon="📬" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics/index"
+        options={{
+          title: 'Analytics',
+          tabBarIcon: ({ color }) => <TabIcon icon="📈" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="prices/index"
+        options={{
+          title: 'Prices',
+          tabBarIcon: ({ color }) => <TabIcon icon="💹" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/index"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <TabIcon icon="👤" color={color} />,
@@ -55,7 +84,7 @@ export default function TabsLayout() {
 function TabIcon({ icon, color }: { icon: string; color: string }) {
   return (
     <View style={styles.iconContainer}>
-      <Text style={[styles.icon, { opacity: color === '#2563eb' ? 1 : 0.6 }]}>
+      <Text style={[styles.icon, { color, opacity: color === theme.colors.text ? 1 : 0.6 }]}>
         {icon}
       </Text>
     </View>
