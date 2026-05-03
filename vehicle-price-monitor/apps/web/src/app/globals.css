@@ -93,3 +93,82 @@
     font-weight: 400;
   }
 }
+
+@keyframes moveDot {
+  0%,
+  100% {
+    top: 10%;
+    right: 10%;
+  }
+  25% {
+    top: 10%;
+    right: calc(100% - 35px);
+  }
+  50% {
+    top: calc(100% - 30px);
+    right: calc(100% - 35px);
+  }
+  75% {
+    top: calc(100% - 30px);
+    right: 10%;
+  }
+}
+
+.glow-card-outer {
+  background: linear-gradient(130deg, hsl(var(--primary) / 0.35), hsl(var(--secondary) / 0.25), transparent);
+}
+
+.glow-card-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.8);
+  animation: moveDot 6s linear infinite;
+  z-index: 20;
+}
+
+.glow-card-ray {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 0%, hsl(var(--primary) / 0.18), transparent 45%);
+}
+
+.glow-card-line {
+  position: absolute;
+  background: hsl(var(--primary) / 0.35);
+  box-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+}
+
+.glow-card-line-top,
+.glow-card-line-bottom {
+  height: 1px;
+  left: 12px;
+  right: 12px;
+}
+
+.glow-card-line-left,
+.glow-card-line-right {
+  width: 1px;
+  top: 12px;
+  bottom: 12px;
+}
+
+.glow-card-line-top {
+  top: 8px;
+}
+
+.glow-card-line-bottom {
+  bottom: 8px;
+}
+
+.glow-card-line-left {
+  left: 8px;
+}
+
+.glow-card-line-right {
+  right: 8px;
+}
