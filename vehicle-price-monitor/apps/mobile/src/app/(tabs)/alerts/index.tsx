@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   apiClient,
@@ -129,7 +130,7 @@ export default function AlertsScreen() {
   const renderAlert = ({ item }: { item: MobileAlert }) => (
     <Pressable style={styles.alertCard} onLongPress={() => removeAlert(item.id)}>
       <View style={styles.alertIcon}>
-        <Text style={styles.alertIconText}>🔔</Text>
+        <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
       </View>
       <View style={styles.alertContent}>
         <Text style={styles.alertName}>{item.keyword || 'Any listing'}</Text>
@@ -145,9 +146,10 @@ export default function AlertsScreen() {
     </Pressable>
   );
 
-  return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+  const listHeader = useMemo(
+    () => (
+    <>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.headerWrap}>
         <SectionHeader
@@ -158,68 +160,68 @@ export default function AlertsScreen() {
 
       <Card style={styles.formCard}>
         <CardContent style={styles.formContent}>
-        <Text style={styles.formTitle}>Manual alert</Text>
-        <Input
-          style={styles.input}
-          value={manualKeyword}
-          onChangeText={setManualKeyword}
-          placeholder="Keyword (Toyota Aqua)"
-        />
-        <View style={styles.inputRow}>
+          <Text style={styles.formTitle}>Manual alert</Text>
           <Input
-            style={[styles.input, styles.inputHalf]}
-            value={manualYear}
-            onChangeText={setManualYear}
-            placeholder="Min year"
+            style={styles.input}
+            value={manualKeyword}
+            onChangeText={setManualKeyword}
+            placeholder="Keyword (Toyota Aqua)"
+          />
+          <View style={styles.inputRow}>
+            <Input
+              style={[styles.input, styles.inputHalf]}
+              value={manualYear}
+              onChangeText={setManualYear}
+              placeholder="Min year"
+              keyboardType="numeric"
+            />
+            <Input
+              style={[styles.input, styles.inputHalf]}
+              value={manualPrice}
+              onChangeText={setManualPrice}
+              placeholder="Max price"
+              keyboardType="numeric"
+            />
+          </View>
+          <Input
+            style={styles.input}
+            value={manualMileage}
+            onChangeText={setManualMileage}
+            placeholder="Max mileage"
             keyboardType="numeric"
           />
-          <Input
-            style={[styles.input, styles.inputHalf]}
-            value={manualPrice}
-            onChangeText={setManualPrice}
-            placeholder="Max price"
-            keyboardType="numeric"
+          <Button
+            label={isCreating ? 'Creating...' : 'Create alert'}
+            onPress={createManualAlert}
           />
-        </View>
-        <Input
-          style={styles.input}
-          value={manualMileage}
-          onChangeText={setManualMileage}
-          placeholder="Max mileage"
-          keyboardType="numeric"
-        />
-        <Button
-          label={isCreating ? 'Creating...' : 'Create alert'}
-          onPress={createManualAlert}
-        />
         </CardContent>
       </Card>
 
       <Card style={styles.formCard}>
         <CardContent style={styles.formContent}>
-        <Text style={styles.formTitle}>NLP alert</Text>
-        <Input
-          style={[styles.input, styles.inputMulti]}
-          value={nlpText}
-          onChangeText={setNlpText}
-          placeholder="Describe your alert in plain English"
-          multiline
-        />
-        <View style={styles.inputRow}>
-          <Button label="Preview parse" variant="outline" onPress={parseNlp} style={styles.inputHalf} />
-          <Button
-            label={isNlpCreating ? 'Creating...' : 'Create from NLP'}
-            onPress={createFromNlp}
-            style={styles.inputHalf}
+          <Text style={styles.formTitle}>NLP alert</Text>
+          <Input
+            style={[styles.input, styles.inputMulti]}
+            value={nlpText}
+            onChangeText={setNlpText}
+            placeholder="Describe your alert in plain English"
+            multiline
           />
-        </View>
-        {nlpPreview ? (
-          <Text style={styles.previewText}>
-            Parsed: {nlpPreview.keyword || 'no keyword'} · minYear:{' '}
-            {nlpPreview.minYear ?? '-'} · maxPrice: {nlpPreview.maxPrice ?? '-'} ·
-            maxMileage: {nlpPreview.maxMileage ?? '-'}
-          </Text>
-        ) : null}
+          <View style={styles.inputRow}>
+            <Button label="Preview parse" variant="outline" onPress={parseNlp} style={styles.inputHalf} />
+            <Button
+              label={isNlpCreating ? 'Creating...' : 'Create from NLP'}
+              onPress={createFromNlp}
+              style={styles.inputHalf}
+            />
+          </View>
+          {nlpPreview ? (
+            <Text style={styles.previewText}>
+              Parsed: {nlpPreview.keyword || 'no keyword'} · minYear:{' '}
+              {nlpPreview.minYear ?? '-'} · maxPrice: {nlpPreview.maxPrice ?? '-'} · maxMileage:{' '}
+              {nlpPreview.maxMileage ?? '-'}
+            </Text>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -239,12 +241,32 @@ export default function AlertsScreen() {
           <Text style={styles.statLabel}>Total</Text>
         </View>
       </View>
+    </>
+    ),
+    [
+      error,
+      manualKeyword,
+      manualYear,
+      manualPrice,
+      manualMileage,
+      nlpText,
+      nlpPreview,
+      isCreating,
+      isNlpCreating,
+      alerts.length,
+    ],
+  );
 
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
+        style={styles.list}
         data={alerts}
         renderItem={renderAlert}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={listHeader}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyTitle}>No active alerts yet</Text>
@@ -270,15 +292,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  list: {
+    flex: 1,
+  },
   formCard: {
-    marginHorizontal: 16,
     marginTop: 12,
   },
   formContent: {
     gap: 8,
   },
   headerWrap: {
-    paddingHorizontal: 16,
     paddingTop: 8,
   },
   formTitle: {
@@ -308,6 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.card,
     paddingVertical: 16,
     marginTop: 12,
+    marginHorizontal: -16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: theme.colors.border,
@@ -331,7 +355,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 32,
     gap: 10,
     flexGrow: 1,
   },
@@ -354,9 +380,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.cardMuted,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  alertIconText: {
-    fontSize: 20,
   },
   alertContent: {
     flex: 1,
@@ -401,7 +424,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: theme.colors.danger,
-    marginHorizontal: 16,
     marginTop: 12,
   },
 });

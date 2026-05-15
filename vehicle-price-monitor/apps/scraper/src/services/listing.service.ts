@@ -140,7 +140,7 @@ async function checkPriceDropAlerts(
   oldPrice: number,
   newPrice: number,
 ): Promise<void> {
-  // Guard: only price drops should trigger this flow.
+  
   if (newPrice >= oldPrice) {
     return;
   }
@@ -240,8 +240,7 @@ export async function upsertListing(listing: NormalizedListing): Promise<UpsertL
       }),
     );
 
-    // Price changes that go DOWN notify matching keyword-based alerts.
-    // Increases intentionally do nothing — see checkPriceDropAlerts guard.
+    
     if (oldPrice !== null && newPrice !== null && newPrice < oldPrice) {
       await checkPriceDropAlerts(updated, oldPrice, newPrice);
     }

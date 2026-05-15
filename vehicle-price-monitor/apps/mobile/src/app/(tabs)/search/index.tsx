@@ -44,9 +44,9 @@ export default function SearchScreen() {
 
   const renderListing = ({ item }: { item: MarketplaceListing }) => (
     <Pressable
-      onTouchEnd={() => {
+      onPress={() => {
         Linking.openURL(item.url).catch(() => {
-          // Keep UX simple if browser fails.
+          
         });
       }}
     >

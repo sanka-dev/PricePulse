@@ -2,15 +2,80 @@ import type {
   ApiResponse,
   AuthResponseDto,
   LoginDto,
-  PaginatedResponse,
-  PriceStatsDto,
   RegisterDto,
   UpdateUserDto,
-  VehicleResponseDto,
 } from '@vehicle-price-monitor/types';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 import { getAccessToken } from './session';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+/** Dev machine LAN hostname for API calls (Metro host is usually the same PC as the API). */
+function resolveDevMachineHost(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0]?.trim();
+    if (host) return host;
+  }
+
+  const dbg =
+    (Constants as { expoGoConfig?: { debuggerHost?: string } }).expoGoConfig?.debuggerHost ??
+    (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
+  if (dbg) {
+    const host = dbg.split(':')[0]?.trim();
+    if (host) return host;
+  }
+
+  return null;
+}
+
+function isLoopbackApiUrl(url: string): boolean {
+  const normalized = /^https?:\/\//i.test(url) ? url : `http://${url}`;
+  try {
+    const { hostname } = new URL(normalized);
+    const h = hostname.toLowerCase();
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBase(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/$/, '') ?? '';
+
+  const physicalDevice = __DEV__ && Platform.OS !== 'web' && Device.isDevice;
+  const envPointsToLoopback = Boolean(fromEnv && isLoopbackApiUrl(fromEnv));
+
+  
+  if (physicalDevice && envPointsToLoopback) {
+    const host = resolveDevMachineHost();
+    if (host) {
+      return `http://${host}:3001`;
+    }
+    console.warn(
+      '[api-client] Physical device + EXPO_PUBLIC_API_URL is localhost — API calls will fail. Set EXPO_PUBLIC_API_URL=http://YOUR_PC_LAN_IP:3001 (ipconfig / ifconfig) or rely on Expo hostUri after removing that line from .env.',
+    );
+  } else if (fromEnv) {
+    return fromEnv;
+  }
+
+  if (__DEV__ && Platform.OS !== 'web') {
+    const host = resolveDevMachineHost();
+    if (host) {
+      return `http://${host}:3001`;
+    }
+  }
+
+  if (__DEV__ && Platform.OS !== 'web') {
+    console.warn(
+      '[api-client] Set EXPO_PUBLIC_API_URL (e.g. http://YOUR_LAN_IP:3001) if login/API calls fail on a device.',
+    );
+  }
+
+  return 'http://localhost:3001';
+}
+
+const API_BASE = resolveApiBase();
 
 export interface MobileAlert {
   id: string;
@@ -21,6 +86,27 @@ export interface MobileAlert {
   location: string | null;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface LiveAlertMatch {
+  id: string;
+  source: string;
+  title: string;
+  url: string;
+  price: number | null;
+  location: string | null;
+  year: number | null;
+  mileage: number | null;
+  imageUrls: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LiveAlertUpdate {
+  alert: MobileAlert;
+  totalMatches: number;
+  latestMatchAt: string | null;
+  matches: LiveAlertMatch[];
 }
 
 export interface MobileNotification {
@@ -235,16 +321,6 @@ export const apiClient = {
     },
     get: (id: string) => request<ApiResponse<ListingItem>>(`/api/v1/listings/${id}`),
   },
-  vehicles: {
-    list: () =>
-      request<PaginatedResponse<VehicleResponseDto>>('/api/v1/vehicles', {}, true),
-    get: (id: string) =>
-      request<ApiResponse<VehicleResponseDto>>(`/api/v1/vehicles/${id}`, {}, true),
-  },
-  prices: {
-    stats: () =>
-      request<ApiResponse<PriceStatsDto>>('/api/v1/prices/stats', {}, true),
-  },
   alerts: {
     list: async () => {
       const response = await request<MobileAlert[] | ApiResponse<MobileAlert[]>>(
@@ -283,11 +359,21 @@ export const apiClient = {
       );
       return unwrapData<MobileNotification[]>(response);
     },
+    liveUpdates: async () => {
+      const response = await request<LiveAlertUpdate[] | ApiResponse<LiveAlertUpdate[]>>(
+        '/api/v1/alerts/live-updates?all=true',
+        {},
+        true,
+      );
+      return unwrapData<LiveAlertUpdate[]>(response);
+    },
   },
   analytics: {
-    alertDemand: (month?: string) =>
-      request<ApiResponse<AlertDemandAnalyticsResponse> | AlertDemandAnalyticsResponse>(
-        `/api/v1/analytics/alert-demand${month ? `?month=${month}` : ''}`,
-      ),
+    alertDemand: async (month?: string) => {
+      const response = await request<
+        ApiResponse<AlertDemandAnalyticsResponse> | AlertDemandAnalyticsResponse
+      >(`/api/v1/analytics/alert-demand${month ? `?month=${month}` : ''}`);
+      return unwrapData<AlertDemandAnalyticsResponse>(response);
+    },
   },
 };

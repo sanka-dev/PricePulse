@@ -9,18 +9,21 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Global prefix
+  
   app.setGlobalPrefix('api/v1');
 
-  // CORS
+  
+  const isProd = process.env.NODE_ENV === 'production';
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:8081'],
+    origin: isProd
+      ? ['http://localhost:3000', 'http://localhost:8081']
+      : true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
-  // Global validation pipe
+  
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,16 +35,16 @@ async function bootstrap() {
     }),
   );
 
-  // Global exception filter
+  
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global response interceptor
+  
   app.useGlobalInterceptors(new TransformInterceptor());
 
   const port = configService.get<number>('PORT', 3001);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
-  console.log(`🚀 API is running on: http://localhost:${port}/api/v1`);
+  console.log(`🚀 API is running on: http://localhost:${port}/api/v1 (bound to 0.0.0.0 for LAN devices)`);
 }
 
 bootstrap();

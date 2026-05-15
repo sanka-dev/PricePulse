@@ -43,8 +43,7 @@ export default function DashboardLayout({
           return;
         }
       } catch (error) {
-        // Lock timeout can happen when browser extensions interfere with auth storage locks.
-        // Fall back to session read before redirecting.
+        
         const message = error instanceof Error ? error.message.toLowerCase() : '';
         if (!message.includes('lock') && !message.includes('timeout')) {
           console.warn('Failed to fetch user via getUser, trying session fallback.', error);

@@ -12,12 +12,20 @@ function VehicleSearchContent() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MarketplaceListing[]>([]);
   const [bySource, setBySource] = useState({ ikman: 0, riyasewana: 0 });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
 
   const hasResults = results.length > 0;
   const canSearch = query.trim().length >= 2;
+  const pageSize = 12;
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  const pageSafe = Math.min(Math.max(page, 1), totalPages);
+  const pagedResults = useMemo(() => {
+    const start = (pageSafe - 1) * pageSize;
+    return results.slice(start, start + pageSize);
+  }, [pageSafe, results]);
 
   const summary = useMemo(
     () =>
@@ -38,10 +46,12 @@ function VehicleSearchContent() {
       setResults(payload.data);
       setBySource(payload.bySource);
       setWarnings(payload.errors ?? []);
+      setPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setResults([]);
       setBySource({ ikman: 0, riyasewana: 0 });
+      setPage(1);
     } finally {
       setLoading(false);
     }
@@ -119,7 +129,33 @@ function VehicleSearchContent() {
       {!loading && !error && hasResults && (
         <>
           <p className="text-sm text-muted-foreground">{summary}</p>
-          <MarketplaceListingsGrid listings={results} />
+          <MarketplaceListingsGrid listings={pagedResults} />
+
+          {results.length > pageSize && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-muted-foreground">
+                Page {pageSafe} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pageSafe <= 1}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={pageSafe >= totalPages}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

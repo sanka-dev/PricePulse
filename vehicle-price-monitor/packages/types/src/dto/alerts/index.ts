@@ -52,7 +52,7 @@ export interface AlertResponseDto {
   lastTriggeredAt?: string;
   expiresAt?: string;
   
-  // Joined data
+  
   vehicle?: {
     id: string;
     title: string;

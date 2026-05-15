@@ -127,8 +127,7 @@ export class GeminiNlpService implements OnModuleInit {
     };
   }
 
-  // Defensive: Gemini usually respects responseMimeType: 'application/json',
-  // but if it slips in a ```json fence we strip it before JSON.parse.
+  
   private stripCodeFences(raw: string): string {
     return raw
       .trim()

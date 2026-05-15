@@ -120,7 +120,7 @@ export default function NotificationsScreen() {
                 await markAsRead(item.id);
                 if (item.listingUrl) {
                   Linking.openURL(item.listingUrl).catch(() => {
-                    // Ignore browser open failures.
+                    
                   });
                 }
               }}

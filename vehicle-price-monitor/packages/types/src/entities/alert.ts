@@ -5,22 +5,22 @@ export interface Alert {
   userId: string;
   vehicleId?: string;
   
-  // Alert configuration
+  
   type: AlertType;
   status: AlertStatus;
   name: string;
   
-  // Conditions
+  
   targetPrice?: number;
   priceDropPercent?: number;
   
-  // Search criteria (for NEW_LISTING alerts)
+  
   searchCriteria?: AlertSearchCriteria;
   
-  // Notification settings
+  
   notificationChannels: NotificationChannel[];
   
-  // Tracking
+  
   triggeredCount: number;
   lastTriggeredAt?: Date;
   expiresAt?: Date;

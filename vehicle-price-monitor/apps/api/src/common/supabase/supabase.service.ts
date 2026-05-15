@@ -18,10 +18,10 @@ export class SupabaseService implements OnModuleInit {
       throw new Error('Supabase URL and Anon Key must be provided');
     }
 
-    // Client for regular operations (respects RLS)
+    
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Admin client for server-side operations (bypasses RLS)
+   
     if (supabaseServiceKey) {
       this.supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
@@ -40,7 +40,7 @@ export class SupabaseService implements OnModuleInit {
     return this.supabaseAdmin;
   }
 
-  // Auth helpers
+  
   async verifyToken(token: string) {
     const { data, error } = await this.supabase.auth.getUser(token);
     if (error) {
@@ -49,7 +49,7 @@ export class SupabaseService implements OnModuleInit {
     return data.user;
   }
 
-  // Database helpers
+  
   from(table: string) {
     return this.supabaseAdmin.from(table);
   }

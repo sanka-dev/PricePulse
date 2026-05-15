@@ -1,4 +1,4 @@
-// Generic API response wrappers
+
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -33,5 +33,5 @@ export interface PaginatedResponse<T> {
   timestamp: string;
 }
 
-// Utility type for creating responses
+
 export type ApiResult<T> = ApiResponse<T> | ApiErrorResponse;

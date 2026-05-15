@@ -54,11 +54,14 @@ export default function AlertsList({ refreshKey = 0 }: AlertsListProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/alerts`);
+      const res = await fetch(`${API_BASE}/api/v1/alerts`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const data: Alert[] = Array.isArray(json) ? json : json.data ?? [];
-      setAlerts(data);
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      setAlerts(sorted);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load alerts');
     } finally {

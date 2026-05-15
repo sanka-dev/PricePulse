@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '@/lib/api-client';
 import { theme } from '@/lib/mobile-theme';
 import { saveSession } from '@/lib/session';
+import { BrandLogo } from '@/components/brand-logo';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -52,6 +53,11 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.hero}>
+            <BrandLogo size={34} />
+            <Text style={styles.welcomeTitle}>Welcome back</Text>
+            <Text style={styles.welcomeSubtitle}>Sign in to continue to PricePulse</Text>
+          </View>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
@@ -118,6 +124,26 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
+    paddingTop: 12,
+  },
+  hero: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  welcomeTitle: {
+    marginTop: 20,
+    fontSize: 22,
+    fontWeight: '700',
+    color: theme.colors.text,
+    letterSpacing: -0.3,
+  },
+  welcomeSubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
   form: {
     gap: 16,

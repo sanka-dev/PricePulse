@@ -65,7 +65,7 @@ export default function ListingsGrid() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // Serialize only the filter params we care about, in a stable order.
+  
   const filterQuery = useMemo(() => {
     if (!searchParams) return '';
     const out = new URLSearchParams();
@@ -76,7 +76,7 @@ export default function ListingsGrid() {
     return out.toString();
   }, [searchParams]);
 
-  // Reset to page 1 whenever active filters change.
+  
   useEffect(() => {
     setPage(1);
   }, [filterQuery]);

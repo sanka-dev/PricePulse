@@ -58,7 +58,7 @@ export class PricesService {
     currency: string = 'USD',
     source: string = 'manual',
   ): Promise<PriceRecord> {
-    // Get the last price record
+    
     const { data: lastRecord } = await this.supabase
       .from('price_records')
       .select('*')
@@ -87,7 +87,7 @@ export class PricesService {
       throw new Error(`Failed to record price: ${error.message}`);
     }
 
-    // Update vehicle's current price
+    
     await this.vehiclesService.updatePrice(vehicleId, price);
 
     return data;

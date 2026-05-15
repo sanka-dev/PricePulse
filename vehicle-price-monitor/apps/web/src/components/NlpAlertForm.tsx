@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Sparkles, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,69 +59,68 @@ export default function NlpAlertForm({ onCreated }: NlpAlertFormProps = {}) {
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold leading-tight">
-              Create alert from description
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Type what you&apos;re looking for in plain English.
-            </p>
-          </div>
+    <Card className="flex h-full min-h-0 flex-col">
+      <CardHeader className="flex flex-row items-start gap-3 space-y-0 pb-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Sparkles className="h-5 w-5" aria-hidden />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium">Description</span>
+        <div className="min-w-0 space-y-1.5">
+          <CardTitle className="text-lg">From description</CardTitle>
+          <CardDescription>
+            We parse your text into keyword, year, price, and mileage filters automatically.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col px-6 pb-6 pt-0">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
+          <label className="block space-y-2">
+            <span className="text-sm font-medium leading-none">Description</span>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Describe what you're looking for..."
+              placeholder="e.g. Toyota Aqua 2018 or newer, under 5 million LKR, below 80,000 km"
               disabled={submitting}
-              rows={3}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50 disabled:pointer-events-none transition-colors resize-none"
+              rows={4}
+              className="min-h-[100px] w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none disabled:opacity-50"
             />
-            <span className="text-xs text-muted-foreground">
-              e.g. &quot;Toyota Aqua 2018 or newer under 5 million with below
-              80000 km&quot;
+            <span className="text-xs leading-relaxed text-muted-foreground">
+              Mention the vehicle, budget, model year, or mileage—the more detail, the better the
+              match.
             </span>
           </label>
 
-          {error && (
-            <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/20 bg-destructive/5 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="flex items-start gap-2 p-3 rounded-lg border border-green-500/20 bg-green-500/5 text-green-600 dark:text-green-400 text-sm">
-              <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{success}</span>
-            </div>
-          )}
-
-          {result && <ParsedPreview result={result} />}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Alert'
+          <div className="mt-auto flex flex-col gap-4 pt-2">
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>{error}</span>
+              </div>
             )}
-          </button>
+
+            {success && (
+              <div className="flex items-start gap-2 rounded-lg border border-green-500/20 bg-green-500/5 p-3 text-sm text-green-600 dark:text-green-400">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>{success}</span>
+              </div>
+            )}
+
+            {result && <ParsedPreview result={result} />}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Creating…
+                </>
+              ) : (
+                'Create alert'
+              )}
+            </button>
+          </div>
         </form>
       </CardContent>
     </Card>
@@ -196,15 +195,15 @@ function ParsedPreview({ result }: { result: ParsedAlert }) {
   ];
 
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+    <div className="rounded-lg border border-border bg-muted/30 p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Parsed filters
       </p>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dl className="mt-3 space-y-2.5 text-sm">
         {rows.map((row) => (
-          <div key={row.label} className="flex justify-between gap-2">
+          <div key={row.label} className="grid grid-cols-[7rem_1fr] items-baseline gap-x-3 gap-y-0.5">
             <dt className="text-muted-foreground">{row.label}</dt>
-            <dd className="font-medium text-right">{row.value}</dd>
+            <dd className="min-w-0 font-medium tabular-nums text-right leading-snug">{row.value}</dd>
           </div>
         ))}
       </dl>

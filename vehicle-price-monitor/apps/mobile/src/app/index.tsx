@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { getAccessToken } from '@/lib/session';
 import { theme } from '@/lib/mobile-theme';
 
@@ -19,7 +20,9 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.logo}>🚗</Text>
+        <View style={styles.logoWrap}>
+          <Ionicons name="car-sport-outline" size={72} color={theme.colors.text} />
+        </View>
         <Text style={styles.title}>PricePulse</Text>
         <Text style={styles.subtitle}>
           Track vehicle prices and never miss a deal
@@ -58,8 +61,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  logo: {
-    fontSize: 80,
+  logoWrap: {
     marginBottom: 24,
   },
   title: {

@@ -18,7 +18,7 @@ export class UsersService {
   constructor(private readonly supabase: SupabaseService) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserRecord> {
-    // Check if user already exists
+    
     const { data: existingUser } = await this.supabase
       .from('users')
       .select('id')

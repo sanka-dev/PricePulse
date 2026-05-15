@@ -250,6 +250,6 @@ function writeStoredReadIds(ids: Set<string>) {
   try {
     window.localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(Array.from(ids)));
   } catch {
-    // Ignore storage write failures; panel still works in memory.
+    
   }
 }

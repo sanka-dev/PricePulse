@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
@@ -364,10 +363,6 @@ export async function runRiyasewanaScraper(): Promise<RiyasewanaScrapeResult> {
   let totalFound = 0;
   const processingErrors: Array<{ index: number; reason: string; sourceListingId?: string }> = [];
 
-  const debugDir = join(process.cwd(), "debug");
-  const debugFile = join(debugDir, "riyasewana.html");
-  const debugFiles: string[] = [];
-  await mkdir(debugDir, { recursive: true });
   const listings: ReturnType<typeof parseRiyasewanaListings> = [];
   const seenListingKeys = new Set<string>();
   let totalParsedAcrossPages = 0;
@@ -386,13 +381,6 @@ export async function runRiyasewanaScraper(): Promise<RiyasewanaScrapeResult> {
     logger.info({ source, pageNumber, pageUrl, query }, "Fetching Riyasewana listings page");
 
     const html = await fetchRiyasewanaHtml(pageUrl);
-    const querySuffix = query ? `-${toSearchPathSegment(query)}` : "";
-    const pageDebugFile =
-      pageNumber === 1
-        ? join(debugDir, `riyasewana${querySuffix}.html`)
-        : join(debugDir, `riyasewana${querySuffix}-page-${pageNumber}.html`);
-    await writeFile(pageDebugFile, html, "utf8");
-    debugFiles.push(pageDebugFile);
 
     const pageListings = parseRiyasewanaListings(html);
     totalParsedAcrossPages += pageListings.length;
@@ -498,8 +486,6 @@ export async function runRiyasewanaScraper(): Promise<RiyasewanaScrapeResult> {
   const scrapeLog = {
     source,
     queries,
-    debugFile,
-    debugFiles,
     maxPages,
     totalPagesFetched: pageJobs.length,
     totalParsedAcrossPages,

@@ -41,7 +41,7 @@ export default function ListingsFilters() {
     readFromParams(searchParams ?? new URLSearchParams()),
   );
 
-  // Keep the form in sync if the user navigates via back/forward buttons.
+  
   useEffect(() => {
     setFilters(readFromParams(searchParams ?? new URLSearchParams()));
   }, [searchParams]);

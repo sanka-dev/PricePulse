@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
@@ -264,7 +263,7 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         },
       }),
     ).catch((error) => {
-      // Price history is useful but non-critical; keep listing saved.
+      
       logger.warn({ err: error, sourceListingId: listing.sourceListingId }, "Failed to save initial price history");
     });
   } else if (
@@ -283,7 +282,7 @@ const fallbackUpsertListing: UpsertListingFn = async (listing) => {
         },
       }),
     ).catch((error) => {
-      // Price history is useful but non-critical; keep listing saved.
+      
       logger.warn({ err: error, sourceListingId: listing.sourceListingId }, "Failed to save changed price history");
     });
   }
@@ -364,10 +363,6 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
   const processingErrors: Array<{ index: number; reason: string; sourceListingId?: string }> = [];
   let totalFound = 0;
 
-  const debugDir = join(process.cwd(), "debug");
-  const debugFile = join(debugDir, "ikman.html");
-  const debugFiles: string[] = [];
-  await mkdir(debugDir, { recursive: true });
   const listings: ReturnType<typeof parseIkmanListings> = [];
   const seenListingKeys = new Set<string>();
   let totalParsedAcrossPages = 0;
@@ -385,16 +380,6 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
     logger.info({ source, pageNumber, pageUrl, query }, "Fetching Ikman listings page");
 
     const html = await fetchIkmanHtml(pageUrl);
-    const querySuffix = query ? `-${toSlug(query)}` : "";
-    const pageDebugFile =
-      pageNumber === 1
-        ? query
-          ? join(debugDir, `ikman${querySuffix}.html`)
-          : debugFile
-        : join(debugDir, `ikman${querySuffix}-page-${pageNumber}.html`);
-    await writeFile(pageDebugFile, html, "utf8");
-    debugFiles.push(pageDebugFile);
-    logger.info({ pageNumber, pageDebugFile }, "Saved raw HTML for page debugging");
 
     const pageListings = parseIkmanListings(html);
     totalParsedAcrossPages += pageListings.length;
@@ -526,8 +511,6 @@ export async function runIkmanScraper(): Promise<IkmanScrapeResult> {
   const scrapeLog = {
     source,
     queries,
-    debugFile,
-    debugFiles,
     maxPages,
     totalPagesFetched: pageJobs.length,
     totalParsedAcrossPages,

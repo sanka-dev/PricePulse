@@ -397,8 +397,7 @@ export class ListingsService {
       return this.fillMissingPricesFromStoredSourceListings('riyasewana', listings);
     }
 
-    // Riyasewana sometimes omits JSON-LD blocks or serves reduced markup.
-    // Fallback to DOM anchor parsing so we still return results.
+    
     const $ = cheerio.load(html);
     const linkElements = $('a[href*="/buy/"]');
     linkElements.each((_, element) => {
@@ -649,8 +648,7 @@ export class ListingsService {
       });
 
       if (!response.ok) {
-        // Marketplace sites can block non-browser requests.
-        // Retry with a browser context before failing.
+        
         if ([401, 403, 429, 503].includes(response.status)) {
           return this.fetchHtmlWithBrowser(url);
         }

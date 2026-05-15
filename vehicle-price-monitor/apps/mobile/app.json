@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.vehiclepricemonitor.app"
     },
     "android": {
-      "package": "com.vehiclepricemonitor.app"
+      "package": "com.vehiclepricemonitor.app",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",

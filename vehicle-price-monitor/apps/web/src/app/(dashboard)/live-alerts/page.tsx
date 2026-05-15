@@ -99,7 +99,10 @@ export default function LiveAlertsPage() {
       }
 
       const data: AlertUpdate[] = Array.isArray(json) ? json : json?.data ?? [];
-      setUpdates(data);
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.alert.createdAt).getTime() - new Date(a.alert.createdAt).getTime(),
+      );
+      setUpdates(sorted);
       setLastLoadedAt(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load live alert updates');
@@ -257,7 +260,7 @@ function ListingMatchCard({ match }: { match: ListingMatch }) {
     >
       <div className="h-20 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          
           <img src={imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">

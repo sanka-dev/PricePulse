@@ -36,7 +36,7 @@ export async function fetchRiyasewanaHtml(url: string): Promise<string> {
     }
 
     await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {
-      // Ignore long polling; DOM content is enough for parsing fallback.
+      
     });
 
     return await page.content();

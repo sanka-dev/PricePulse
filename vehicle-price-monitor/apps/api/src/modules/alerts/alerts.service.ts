@@ -356,7 +356,7 @@ export class AlertsService {
     return parsed;
   }
 
-  // Matches: "under 50000 km", "below 50k km", "less than 100,000 kilometers", "50000 mileage"
+  
   private readonly MILEAGE_REGEX =
     /(?:(?:below|under|less\s+than|max(?:imum)?|up\s+to|at\s+most)\s+)?(\d[\d,.]*)\s*(k)?\s*(?:km|kms|kilometers?|mileage)\b/;
 
@@ -371,7 +371,7 @@ export class AlertsService {
     return { value, remaining: text.replace(match[0], ' ') };
   }
 
-  // Price signals: modifier + number (+unit), currency prefix + number, or number + unit.
+  
   private readonly PRICE_PATTERNS: RegExp[] = [
     /(?:below|under|less\s+than|max(?:imum)?|up\s+to|at\s+most)\s+(?:rs\.?|lkr|\$)\s*(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)?/,
     /(?:below|under|less\s+than|max(?:imum)?|up\s+to|at\s+most)\s+(\d[\d,.]*)\s*(million|mn|lakh|lakhs|crore|crores|m|k)/,
@@ -413,7 +413,7 @@ export class AlertsService {
     }
   }
 
-  // Year signals: "2018 or newer", "after 2018", or a standalone 4-digit year.
+  
   private readonly YEAR_PATTERNS: RegExp[] = [
     /(19\d{2}|20\d{2})\s*(?:or\s+(?:newer|later|above)|and\s+(?:up|above|newer)|\+)/,
     /(?:after|from|since|newer\s+than)\s+(19\d{2}|20\d{2})/,

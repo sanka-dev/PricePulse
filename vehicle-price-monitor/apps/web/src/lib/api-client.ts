@@ -52,7 +52,7 @@ class ApiClient {
     return response.json();
   }
 
-  // Auth
+  
   auth = {
     login: (data: LoginDto) =>
       this.request<ApiResponse<AuthResponseDto>>('/api/v1/auth/login', {
@@ -75,7 +75,7 @@ class ApiClient {
       }),
   };
 
-  // Vehicles
+  
   vehicles = {
     list: (query?: VehicleQueryDto) => {
       const params = new URLSearchParams();
@@ -111,7 +111,7 @@ class ApiClient {
       }),
   };
 
-  // Prices
+  
   prices = {
     history: (vehicleId: string) =>
       this.request<ApiResponse<PriceHistoryResponseDto>>(
@@ -121,7 +121,7 @@ class ApiClient {
     stats: () => this.request<ApiResponse<PriceStatsDto>>('/api/v1/prices/stats'),
   };
 
-  // Alerts
+  
   alerts = {
     list: (query?: AlertQueryDto) => {
       const params = new URLSearchParams();

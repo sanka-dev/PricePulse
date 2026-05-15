@@ -54,3 +54,6 @@ yarn-error.log*
 *.tsbuildinfo
 .eslintcache
 *.tgz
+
+# Scraper debug artifacts
+apps/scraper/debug/

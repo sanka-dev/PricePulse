@@ -26,11 +26,11 @@ export default function RootLayout() {
 
         intervalId = setInterval(() => {
           notifyForNewAlertEvents().catch(() => {
-            // Ignore polling errors to keep app responsive.
+            
           });
         }, 60_000);
       } catch {
-        // Notification setup should not block app startup.
+        
       }
     };
 

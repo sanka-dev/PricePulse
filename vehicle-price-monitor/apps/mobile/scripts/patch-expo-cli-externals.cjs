@@ -1,10 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// In SDK 54+, @expo/cli already strips the `node:` prefix internally, so this
-// patch is only needed for older bundled CLIs (SDK <= 50). We try to locate
-// either the modern (nested) or the old (hoisted) install and patch only when
-// the broken snippet is present.
+
 const candidateTargets = [
   path.resolve(
     __dirname,

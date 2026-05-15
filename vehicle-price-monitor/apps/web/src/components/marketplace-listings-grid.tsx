@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { MarketplaceListing } from '@/lib/marketplace-search';
 import { formatLKR } from '@/lib/marketplace-search';
 
@@ -9,13 +9,17 @@ export function MarketplaceListingsGrid({ listings }: { listings: MarketplaceLis
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {listings.map((listing) => (
-        <article
+        <a
           key={`${listing.source}-${listing.sourceListingId}`}
-          className="rounded-lg border border-border bg-card overflow-hidden"
+          href={listing.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open listing: ${listing.title} on ${listing.source}`}
+          className="block rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/40 hover:bg-accent/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <div className="relative aspect-[4/3] bg-muted">
             {listing.imageUrls?.[0] ? (
-              <MarketplaceImage src={listing.imageUrls[0]} alt={listing.title} />
+              <MarketplaceImage src={listing.imageUrls[0]} alt="" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">
                 No image
@@ -42,17 +46,8 @@ export function MarketplaceListingsGrid({ listings }: { listings: MarketplaceLis
               {listing.year && <ListingBadge>{listing.year}</ListingBadge>}
               {listing.mileage && <ListingBadge>{listing.mileage.toLocaleString()} km</ListingBadge>}
             </div>
-
-            <a
-              href={listing.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Open listing <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
-        </article>
+        </a>
       ))}
     </div>
   );

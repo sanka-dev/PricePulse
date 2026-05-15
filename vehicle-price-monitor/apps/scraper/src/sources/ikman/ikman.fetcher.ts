@@ -26,7 +26,7 @@ export async function fetchIkmanHtml(url: string): Promise<string> {
         logger.warn({ attempt, url }, "Navigation attempt failed, retrying");
         if (attempt < 3) {
           await page.waitForTimeout(1_500 * attempt);
-          // Fallback on quicker readiness if DOMContentLoaded keeps timing out.
+          
           await page.goto(url, { waitUntil: "commit", timeout: 60_000 }).catch(() => undefined);
         }
       }
@@ -37,7 +37,7 @@ export async function fetchIkmanHtml(url: string): Promise<string> {
     }
 
     await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {
-      // Some pages keep long-running network connections; DOM content is enough fallback.
+      
     });
 
     return await page.content();

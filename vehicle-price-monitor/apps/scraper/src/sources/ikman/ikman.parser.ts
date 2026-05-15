@@ -45,14 +45,14 @@ function parseYear(text?: string): number | undefined {
 
   if (validYears.length === 0) return undefined;
 
-  // Prefer the right-most valid year, which is usually the model year in titles.
+  
   return validYears[validYears.length - 1];
 }
 
 function parseMileage(text?: string, year?: number): number | undefined {
   if (!text) return undefined;
 
-  // Extract only when explicitly marked as mileage (km / kms / kilometers).
+  
   const match = text.match(/\b(\d{1,3}(?:,\d{3})+|\d{2,7})\s*(km|kms|kilometers|kilometres)\b/i);
   if (!match) return undefined;
 
@@ -60,7 +60,7 @@ function parseMileage(text?: string, year?: number): number | undefined {
   if (!Number.isFinite(value)) return undefined;
   if (year && value === year) return undefined;
 
-  // Ignore clearly unrealistic mileage values.
+  
   if (value < 100 || value > 1_000_000) return undefined;
 
   return value;
@@ -134,7 +134,7 @@ function parseFromCardDom(html: string): ParsedIkmanListing[] {
   const listings: ParsedIkmanListing[] = [];
   const seen = new Set<string>();
 
-  // Keep card selection narrow and process each card independently.
+  
   const cards = $("li").filter((_, el) => $(el).find("a[href*='/ad/']").length > 0);
 
   cards.each((_, el) => {

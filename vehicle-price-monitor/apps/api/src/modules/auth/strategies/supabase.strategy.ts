@@ -29,7 +29,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'supabase') {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    // Get or create user profile
+    
     try {
       const userProfile = await this.usersService.findById(user.id);
       return {
@@ -40,7 +40,7 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'supabase') {
         lastName: userProfile.last_name,
       };
     } catch {
-      // User profile doesn't exist, create it
+      
       const userProfile = await this.usersService.upsertFromAuth({
         id: user.id,
         email: user.email!,

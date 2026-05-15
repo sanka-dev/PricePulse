@@ -22,7 +22,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Ensure user profile exists
+    
     const userProfile = await this.usersService.upsertFromAuth({
       id: data.user.id,
       email: data.user.email!,
@@ -64,13 +64,13 @@ export class AuthService {
       throw new UnauthorizedException('Registration failed');
     }
 
-    // Create user profile in our users table
+   
     await this.usersService.upsertFromAuth({
       id: data.user.id,
       email: data.user.email!,
     });
 
-    // Update profile with names
+    
     const userProfile = await this.usersService.update(data.user.id, {
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,

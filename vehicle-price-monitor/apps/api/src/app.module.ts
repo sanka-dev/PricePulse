@@ -12,16 +12,16 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
-    // Configuration
+    
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../scraper/.env'],
     }),
 
-    // Supabase
+    
     SupabaseModule,
 
-    // Feature modules
+   
     AuthModule,
     UsersModule,
     VehiclesModule,

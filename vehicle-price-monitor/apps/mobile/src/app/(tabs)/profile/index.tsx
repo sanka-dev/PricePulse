@@ -6,13 +6,17 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient, type MobileNotification } from '@/lib/api-client';
 import { theme } from '@/lib/mobile-theme';
 import { clearSession, getSessionUser, type SessionUser } from '@/lib/session';
+import { getStoredPushToken, registerForPushNotifications } from '@/lib/notifications';
 import { Button, Card, CardContent, Input, SectionHeader } from '@/components/ui';
+import type { IoniconName } from '@/components/native/ios-shell';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -29,14 +33,10 @@ export default function ProfileScreen() {
       setFirstName(sessionUser?.firstName || '');
       setLastName(sessionUser?.lastName || '');
     });
-    if (typeof window !== 'undefined') {
-      const localToken = window.localStorage.getItem('mobile_push_token');
-      setPushToken(localToken);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      setPushToken(window.localStorage?.getItem('mobile_push_token') ?? null);
     } else {
-      import('@/lib/notifications')
-        .then(({ getStoredPushToken }) => getStoredPushToken())
-        .then(setPushToken)
-        .catch(() => setPushToken(null));
+      getStoredPushToken().then(setPushToken).catch(() => setPushToken(null));
     }
     apiClient.alerts
       .notifications(20)
@@ -69,7 +69,10 @@ export default function ProfileScreen() {
   };
 
   const handleEnablePush = async () => {
-    const { registerForPushNotifications } = await import('@/lib/notifications');
+    if (Platform.OS === 'web') {
+      Alert.alert('Not available', 'Push notifications are not supported in the browser.');
+      return;
+    }
     const token = await registerForPushNotifications();
     if (!token) {
       Alert.alert('Push disabled', 'Notification permissions are required.');
@@ -83,7 +86,7 @@ export default function ProfileScreen() {
     try {
       await apiClient.auth.logout();
     } catch {
-      // Session may already be invalid.
+      
     }
     await clearSession();
     router.replace('/');
@@ -110,23 +113,22 @@ export default function ProfileScreen() {
         <Card style={styles.menuSection}>
           <CardContent style={styles.menuContent}>
           <MenuItem
-            icon="🔔"
+            iconName="notifications-outline"
             title={`Notifications (${notificationCount})`}
             onPress={() => router.push('/notifications' as any)}
           />
           <MenuItem
-            icon="🔎"
+            iconName="search-outline"
             title="Search listings"
             onPress={() => router.push('/search' as any)}
           />
           <MenuItem
-            icon="📈"
-            title="Analytics"
-            onPress={() => router.push('/analytics' as any)}
+            iconName="phone-portrait-outline"
+            title="Enable Push Notifications"
+            onPress={handleEnablePush}
           />
-          <MenuItem icon="📱" title="Enable Push Notifications" onPress={handleEnablePush} />
           <MenuItem
-            icon="🔑"
+            iconName="key-outline"
             title={pushToken ? 'Push token saved on device' : 'Push token missing'}
             onPress={handleEnablePush}
           />
@@ -195,19 +197,19 @@ export default function ProfileScreen() {
 }
 
 function MenuItem({
-  icon,
+  iconName,
   title,
   onPress,
 }: {
-  icon: string;
+  iconName: IoniconName;
   title: string;
   onPress: () => void;
 }) {
   return (
     <Pressable style={styles.menuItem} onPress={onPress}>
-      <Text style={styles.menuIcon}>{icon}</Text>
+      <Ionicons name={iconName} size={22} color={theme.colors.text} style={styles.menuLeadingIcon} />
       <Text style={styles.menuTitle}>{title}</Text>
-      <Text style={styles.menuArrow}>›</Text>
+      <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
     </Pressable>
   );
 }
@@ -259,18 +261,13 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
     borderRadius: 0,
   },
-  menuIcon: {
-    fontSize: 20,
+  menuLeadingIcon: {
     marginRight: 12,
   },
   menuTitle: {
     flex: 1,
     fontSize: 16,
     color: theme.colors.text,
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: theme.colors.textMuted,
   },
   logoutButton: { marginBottom: 24 },
   version: {

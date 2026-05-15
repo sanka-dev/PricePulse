@@ -84,7 +84,7 @@ export default function DashboardScreen() {
             <Text style={styles.activityText}>
               {isLoading
                 ? 'Loading dashboard data...'
-                : 'Dashboard is synced. Open Search, Alerts, Notifications, or Analytics for details.'}
+                : 'Dashboard is synced. Open Search, Alerts, Live updates, or Notifications for details.'}
             </Text>
           </CardContent>
         </Card>
